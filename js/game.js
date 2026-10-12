@@ -1002,6 +1002,13 @@ const Game = (() => {
       try { AudioEngine.playCascade(4); } catch (_) {}
     }
 
+    // Minimum Move Requirement: Every level must take at least 3 moves to complete,
+    // even with perfect play, ensuring gameplay engagement and pacing before completion.
+    const movesMade = levelDef.moves - movesLeft;
+    if (movesMade < 3) {
+      return;
+    }
+
     // 1. Reaching 3 Stars is an immediate victory!
     if (score >= s3) {
       if (movesLeft > 0) {

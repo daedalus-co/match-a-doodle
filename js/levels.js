@@ -101,14 +101,14 @@ function generateLevels(total = 500) {
     {
       id: 1,
       title: 'First Sketch',
-      subtitle: 'Score 1,200 points to pass! Reach 2,600 for 3 Stars! ⭐⭐⭐',
+      subtitle: 'Score 2,400 points to pass! Reach 5,200 for 3 Stars! ⭐⭐⭐',
       worldName: WORLD_NAMES[0],
       worldIndex: 1,
       objective: 'score',
       moves: 20,
       candyPool: [1, 2, 3, 4], // 4 colors: lots of natural 4-in-a-row & T/L combos!
-      targetScore: 1200,
-      stars: [1200, 1800, 2600], // 3 stars easily doable with powerups
+      targetScore: 2400,
+      stars: [2400, 3600, 5200], // mathematically requires >= 3 moves even with combos
       jellyMap: null,
       orders: null,
       ingredientCount: 0,
