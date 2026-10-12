@@ -14,6 +14,7 @@ const AudioEngine = (() => {
 
   let sfxEnabled = true;
   let musicEnabled = true;
+  let isAppBackgrounded = false;
 
   // Background Music loop variables
   let musicOscillators = [];
@@ -37,7 +38,7 @@ const AudioEngine = (() => {
       musicGain.gain.value = 0.55; // Audibly pleasant, relaxing sketchbook vibe
       musicGain.connect(masterGain);
     }
-    if (ctx.state === 'suspended') {
+    if (ctx.state === 'suspended' && !isAppBackgrounded) {
       ctx.resume().catch(() => {});
     }
     return ctx;
@@ -45,6 +46,7 @@ const AudioEngine = (() => {
 
   function unlockAudio() {
     try {
+      if (isAppBackgrounded) return;
       const c = getCtx();
       if (c && c.state === 'suspended') {
         c.resume().catch(() => {});
@@ -391,16 +393,76 @@ const AudioEngine = (() => {
 
   // ── SFX Controls ─────────────────────────────────────────────────────────────
 
-  function setEnabled(val) {
-    sfxEnabled = !!val;
+  // ── Lifecycle Visibility & Background Pause / Resume ────────────────────────
+  function pauseAudio() {
+    isAppBackgrounded = true;
+    if (musicInterval) {
+      clearInterval(musicInterval);
+      musicInterval = null;
+    }
+    if (ctx && ctx.state === 'running') {
+      ctx.suspend().catch(() => {});
+    }
   }
-  function isEnabled() { return sfxEnabled; }
+
+  function resumeAudio() {
+    isAppBackgrounded = false;
+    if (ctx && ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+    if (musicEnabled && isMusicPlaying && !musicInterval) {
+      // Re-trigger interval without resetting musicStep
+      const theme = THEME_MUSIC[currentTheme % THEME_MUSIC.length];
+      musicInterval = setInterval(() => {
+        if (!musicEnabled || !isMusicPlaying || isAppBackgrounded) return;
+        const c = getCtx();
+        const now = c.currentTime;
+
+        // Melody note
+        const freq = theme.melody[musicStep % theme.melody.length];
+        const osc = c.createOscillator();
+        osc.type = theme.melType;
+        osc.frequency.setValueAtTime(freq, now);
+
+        const g = c.createGain();
+        g.gain.setValueAtTime(0, now);
+        g.gain.linearRampToValueAtTime(theme.melGain, now + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.002, now + theme.melDecay);
+
+        osc.connect(g);
+        g.connect(musicGain);
+        osc.start(now);
+        osc.stop(now + theme.melDecay + 0.02);
+
+        // Bass note every 2 steps
+        if (musicStep % 2 === 0) {
+          const bassFreq = theme.bass[(musicStep / 2) % theme.bass.length];
+          const bassOsc = c.createOscillator();
+          bassOsc.type = theme.bassType;
+          bassOsc.frequency.setValueAtTime(bassFreq, now);
+
+          const bassG = c.createGain();
+          bassG.gain.setValueAtTime(0, now);
+          bassG.gain.linearRampToValueAtTime(theme.bassGain, now + 0.03);
+          bassG.gain.exponentialRampToValueAtTime(0.002, now + theme.bassDecay);
+
+          bassOsc.connect(bassG);
+          bassG.connect(musicGain);
+          bassOsc.start(now);
+          bassOsc.stop(now + theme.bassDecay + 0.02);
+        }
+
+        musicStep++;
+      }, theme.tempo);
+    }
+  }
 
   return {
     playSelect, playMatch, playInvalid, playLaser, playExplosion,
     playColorBomb, playCascade, playJelly, playBooster,
     playVictory, playDefeat, playClick, playIngredient,
     startMusic, stopMusic, toggleMusic, setMusicEnabled, isMusicEnabled,
+    pauseAudio, resumeAudio,
     setTheme,
     unlockAudio,
     setEnabled, isEnabled

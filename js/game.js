@@ -245,6 +245,46 @@ const Game = (() => {
     window.addEventListener('pointerdown', unlockListener, { once: true });
     window.addEventListener('keydown', unlockListener, { once: true });
 
+    // Handle App Minimizing / Tab Switching / Backgrounding:
+    // Instantly pause background music and audio when minimized or screen locked,
+    // and seamlessly resume when returning to the game.
+    const handleAppHide = () => {
+      AudioEngine.pauseAudio();
+    };
+    const handleAppShow = () => {
+      AudioEngine.resumeAudio();
+    };
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        handleAppHide();
+      } else {
+        handleAppShow();
+      }
+    });
+    window.addEventListener('pagehide', handleAppHide);
+    window.addEventListener('pageshow', handleAppShow);
+    window.addEventListener('blur', () => {
+      // Blur can fire during normal interactions, but if document is also hidden or window loses focus on mobile
+      if (document.hidden) handleAppHide();
+    });
+    window.addEventListener('focus', () => {
+      if (!document.hidden) handleAppShow();
+    });
+
+    // Capacitor App State listener (if running inside native Capacitor app container)
+    try {
+      if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+        window.Capacitor.Plugins.App.addListener('appStateChange', (state) => {
+          if (state && !state.isActive) {
+            handleAppHide();
+          } else {
+            handleAppShow();
+          }
+        });
+      }
+    } catch (_) {}
+
     showMainMenu();
     requestAnimationFrame(gameLoop);
   }
