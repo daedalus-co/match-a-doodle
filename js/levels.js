@@ -301,25 +301,40 @@ function generateLevels(total = 500) {
   curated.forEach(lvl => list.push(lvl));
 
   // Procedurally generate levels 11 to 500
+  // Difficulty ramps from level 3 onward, every 3 stages harder
   for (let id = 11; id <= total; id++) {
     const rng = mulberry32(id * 997 + 1013);
     const worldIndex = Math.floor((id - 1) / 20);
     const worldName = WORLD_NAMES[Math.min(worldIndex, WORLD_NAMES.length - 1)];
     const posInEpisode = (id - 1) % 20;
 
+    // Global progression across 500 levels (0 = start, 1 = max)
     const epProgression = Math.min(1, worldIndex / 24);
 
+    // Within-episode difficulty profile: gentle start, hard finish
+    // Each 3-level block is one notch harder than the previous
     let posFactor = 0.5;
-    if (posInEpisode < 4) posFactor = 0.25;
-    else if (posInEpisode < 12) posFactor = 0.55;
-    else if (posInEpisode < 16) posFactor = 0.90;
-    else if (posInEpisode < 19) posFactor = 0.65;
-    else posFactor = 0.95;
+    const block = Math.floor(posInEpisode / 3); // 0..6
+    // Warmup block (positions 0-2): easy entry to the world
+    if (block === 0) posFactor = 0.15;
+    // Blocks 1-5: incrementally harder every 3 stages
+    else if (block === 1) posFactor = 0.30;
+    else if (block === 2) posFactor = 0.50;
+    else if (block === 3) posFactor = 0.65;
+    else if (block === 4) posFactor = 0.80;
+    else if (block === 5) posFactor = 0.92;
+    // Boss finale (positions 18-19): hardest in the world
+    else posFactor = 1.00;
 
-    const overallDifficulty = Math.min(1, epProgression * 0.6 + posFactor * 0.4);
+    const overallDifficulty = Math.min(1, epProgression * 0.55 + posFactor * 0.45);
 
-    // Dynamic candy pool: 5 colors early and on warmup levels, 6 colors on harder challenges
-    const candyPool = (posInEpisode < 4 || (id < 50 && rng() < 0.5)) ? [1, 2, 3, 4, 5] : [1, 2, 3, 4, 5, 6];
+    // Frosting/licorice appearance: starts from block 2 onward (level 7+ in each world)
+    const hasObstacles = block >= 2 && overallDifficulty > 0.25;
+    // Obstacle density scales with difficulty
+    const obstacleDensity = hasObstacles ? Math.min(0.30, (overallDifficulty - 0.25) * 0.45) : 0;
+
+    // Dynamic candy pool: 5 colors warmup, 6 colors on harder blocks
+    const candyPool = (block < 2 || (id < 50 && rng() < 0.5)) ? [1, 2, 3, 4, 5] : [1, 2, 3, 4, 5, 6];
 
     const objTypes = ['score', 'jelly', 'order', 'ingredient', 'mixed'];
     let objective;
@@ -332,10 +347,11 @@ function generateLevels(total = 500) {
       objective = objTypes[typeIdx];
     }
 
-    let baseMoves = Math.round(34 - overallDifficulty * 10 + (rng() * 4 - 2));
+    // Moves: reduce as difficulty increases (harder levels = fewer moves to complete goals)
+    let baseMoves = Math.round(36 - overallDifficulty * 14 + (rng() * 4 - 2));
     if (objective === 'ingredient') baseMoves += 4;
     if (objective === 'mixed') baseMoves += 6;
-    const moves = Math.max(22, Math.min(45, baseMoves));
+    const moves = Math.max(20, Math.min(45, baseMoves));
 
     let targetScore = 0;
     let jellyMap = null;
@@ -349,42 +365,53 @@ function generateLevels(total = 500) {
     let subtitle = '';
 
     if (objective === 'score') {
-      const basePts = 2000 + Math.floor(overallDifficulty * 3800) + Math.floor(rng() * 600);
+      const basePts = 2000 + Math.floor(overallDifficulty * 4200) + Math.floor(rng() * 600);
       targetScore = Math.round(basePts / 100) * 100;
       subtitle = `Reach ${targetScore.toLocaleString()} points in ${moves} moves!`;
     } else if (objective === 'jelly') {
-      const density = 0.32 + overallDifficulty * 0.40;
-      const doubleRate = 0.15 + overallDifficulty * 0.50;
+      // Harder levels: higher jelly density + more double jellies + frosting obstacles
+      const density = 0.28 + overallDifficulty * 0.48;
+      const doubleRate = 0.10 + overallDifficulty * 0.60;
       jellyMap = generateJellyMap(rng, density, doubleRate);
+      // Overlay frosting on some jelly cells in harder levels
+      if (hasObstacles && obstacleDensity > 0) {
+        for (let r = 0; r < 8; r++) {
+          for (let c = 0; c < 8; c++) {
+            if (jellyMap[r][c] > 0 && rng() < obstacleDensity) {
+              jellyMap[r][c] = rng() < 0.5 ? F1 : F2;
+            }
+          }
+        }
+      }
       subtitle = `Clear all sketch ink patches across the board!`;
     } else if (objective === 'order') {
-      const numColors = rng() < 0.5 ? 2 : 3;
+      const numColors = overallDifficulty > 0.5 ? 3 : (rng() < 0.5 ? 2 : 3);
       orders = {};
       const colors = [1, 2, 3, 4, 5, 6].sort(() => rng() - 0.5).slice(0, numColors);
-      const perColor = Math.round(12 + overallDifficulty * 12 + rng() * 4);
+      const perColor = Math.round(10 + overallDifficulty * 16 + rng() * 4);
       colors.forEach(c => { orders[c] = perColor; });
       subtitle = `Collect your target order before running out of moves!`;
     } else if (objective === 'ingredient') {
-      ingredientCount = 3 + Math.floor(overallDifficulty * 3);
-      if (overallDifficulty > 0.4) ingredientTypes = [CH, HZ];
+      ingredientCount = 2 + Math.floor(overallDifficulty * 4);
+      if (overallDifficulty > 0.3) ingredientTypes = [CH, HZ];
       subtitle = `Guide ${ingredientCount} acorns and ink drops to the bottom!`;
-      targetScore = 1800 + Math.floor(overallDifficulty * 1800);
+      targetScore = 1800 + Math.floor(overallDifficulty * 2200);
     } else if (objective === 'mixed') {
-      const basePts = 2600 + Math.floor(overallDifficulty * 3200);
+      const basePts = 2600 + Math.floor(overallDifficulty * 4000);
       targetScore = Math.round(basePts / 100) * 100;
-      const density = 0.25 + overallDifficulty * 0.35;
-      jellyMap = generateJellyMap(rng, density, 0.3);
+      const density = 0.22 + overallDifficulty * 0.40;
+      jellyMap = generateJellyMap(rng, density, 0.25 + overallDifficulty * 0.30);
       if (rng() < 0.6) {
         orders = {};
-        orders[Math.floor(rng() * 5) + 1] = Math.round(10 + overallDifficulty * 8);
+        orders[Math.floor(rng() * 5) + 1] = Math.round(8 + overallDifficulty * 12);
       }
       subtitle = `Score ${targetScore.toLocaleString()} points and clear the ink!`;
     }
 
-    const baseStarScore = targetScore > 0 ? targetScore : Math.round((1800 + overallDifficulty * 2200) / 100) * 100;
+    const baseStarScore = targetScore > 0 ? targetScore : Math.round((1800 + overallDifficulty * 2600) / 100) * 100;
     const star1 = baseStarScore;
     const star2 = Math.round((baseStarScore * 1.45) / 50) * 50;
-    const star3 = Math.round((baseStarScore * 2.05) / 50) * 50;
+    const star3 = Math.round((baseStarScore * 2.10) / 50) * 50;
 
     list.push({
       id,
@@ -406,6 +433,7 @@ function generateLevels(total = 500) {
 
   return list;
 }
+
 
 const Levels = generateLevels(500);
 

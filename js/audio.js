@@ -211,15 +211,93 @@ const AudioEngine = (() => {
     });
   }
 
-  // ── Procedural Ambient Background Music (Free Chiptune/Lofi Melody) ──────────
-  // Gentle C major pentatonic progression: C4, E4, G4, A4, D5, C5, G4, E4
-  const BGM_NOTES = [
-    261.63, 329.63, 392.00, 440.00, 523.25, 392.00, 329.63, 261.63,
-    293.66, 349.23, 440.00, 523.25, 587.33, 440.00, 349.23, 293.66
-  ];
-  const BASS_NOTES = [
-    130.81, 130.81, 164.81, 164.81, 196.00, 196.00, 130.81, 130.81,
-    146.83, 146.83, 174.61, 174.61, 220.00, 220.00, 146.83, 146.83
+  // ── 8 World Theme Music Profiles ─────────────────────────────────────────────
+  // Each theme has: melody notes, bass notes, oscillator type, tempo (ms/step),
+  // gain levels, and bass-frequency multiplier for distinct character.
+
+  let currentTheme = 0;
+
+  const THEME_MUSIC = [
+    {
+      // Theme 0: Sketchy Hills — warm acoustic guitar strum (C major pentatonic, triangle)
+      name: 'Sketchy Hills',
+      melody: [261.63, 329.63, 392.00, 440.00, 523.25, 392.00, 329.63, 261.63,
+               293.66, 349.23, 440.00, 523.25, 587.33, 440.00, 349.23, 293.66],
+      bass:   [130.81, 130.81, 164.81, 164.81, 196.00, 196.00, 130.81, 130.81,
+               146.83, 146.83, 174.61, 174.61, 220.00, 220.00, 146.83, 146.83],
+      melType: 'triangle', bassType: 'sine',
+      tempo: 450, melGain: 0.24, bassGain: 0.28, melDecay: 0.52, bassDecay: 0.80,
+    },
+    {
+      // Theme 1: Graph Paper Grove — electronic/chiptune (D dorian, square wave)
+      name: 'Graph Paper Grove',
+      melody: [293.66, 329.63, 369.99, 440.00, 493.88, 440.00, 369.99, 329.63,
+               349.23, 392.00, 440.00, 523.25, 587.33, 523.25, 440.00, 349.23],
+      bass:   [146.83, 146.83, 184.99, 184.99, 220.00, 220.00, 146.83, 146.83,
+               174.61, 174.61, 220.00, 220.00, 246.94, 246.94, 174.61, 174.61],
+      melType: 'square', bassType: 'square',
+      tempo: 300, melGain: 0.14, bassGain: 0.18, melDecay: 0.30, bassDecay: 0.50,
+    },
+    {
+      // Theme 2: Crayon Canyon — marimba/xylophone (G major, sawtooth softened)
+      name: 'Crayon Canyon',
+      melody: [392.00, 493.88, 587.33, 659.25, 783.99, 659.25, 587.33, 493.88,
+               440.00, 523.25, 587.33, 659.25, 783.99, 659.25, 523.25, 440.00],
+      bass:   [196.00, 196.00, 246.94, 246.94, 293.66, 293.66, 196.00, 196.00,
+               220.00, 220.00, 261.63, 261.63, 329.63, 329.63, 220.00, 220.00],
+      melType: 'sine', bassType: 'triangle',
+      tempo: 380, melGain: 0.30, bassGain: 0.22, melDecay: 0.32, bassDecay: 0.55,
+    },
+    {
+      // Theme 3: Chalkboard Caverns — moody minor (A natural minor, sawtooth)
+      name: 'Chalkboard Caverns',
+      melody: [440.00, 392.00, 349.23, 329.63, 293.66, 329.63, 349.23, 392.00,
+               523.25, 493.88, 440.00, 392.00, 349.23, 392.00, 440.00, 493.88],
+      bass:   [110.00, 110.00, 146.83, 146.83, 130.81, 130.81, 110.00, 110.00,
+               130.81, 130.81, 164.81, 164.81, 146.83, 146.83, 130.81, 130.81],
+      melType: 'sawtooth', bassType: 'sine',
+      tempo: 520, melGain: 0.15, bassGain: 0.25, melDecay: 0.60, bassDecay: 0.90,
+    },
+    {
+      // Theme 4: Origami Oasis — Asian-inspired pentatonic (E pentatonic, triangle+sine)
+      name: 'Origami Oasis',
+      melody: [329.63, 369.99, 440.00, 493.88, 587.33, 493.88, 440.00, 369.99,
+               369.99, 440.00, 523.25, 587.33, 659.25, 587.33, 523.25, 440.00],
+      bass:   [164.81, 164.81, 184.99, 184.99, 220.00, 220.00, 164.81, 164.81,
+               184.99, 184.99, 220.00, 220.00, 246.94, 246.94, 184.99, 184.99],
+      melType: 'triangle', bassType: 'sine',
+      tempo: 490, melGain: 0.22, bassGain: 0.20, melDecay: 0.70, bassDecay: 1.00,
+    },
+    {
+      // Theme 5: Watercolor Waves — dreamy/ambient (F major, sine with long sustain)
+      name: 'Watercolor Waves',
+      melody: [349.23, 440.00, 523.25, 587.33, 698.46, 587.33, 523.25, 440.00,
+               392.00, 493.88, 587.33, 659.25, 783.99, 659.25, 587.33, 493.88],
+      bass:   [174.61, 174.61, 220.00, 220.00, 261.63, 261.63, 174.61, 174.61,
+               196.00, 196.00, 246.94, 246.94, 293.66, 293.66, 196.00, 196.00],
+      melType: 'sine', bassType: 'sine',
+      tempo: 600, melGain: 0.20, bassGain: 0.22, melDecay: 0.90, bassDecay: 1.20,
+    },
+    {
+      // Theme 6: Inkwell Valley — jazz-inflected (G mixolydian, triangle warm)
+      name: 'Inkwell Valley',
+      melody: [392.00, 440.00, 493.88, 523.25, 587.33, 523.25, 466.16, 440.00,
+               415.30, 440.00, 493.88, 554.37, 622.25, 554.37, 493.88, 466.16],
+      bass:   [196.00, 196.00, 220.00, 220.00, 246.94, 246.94, 196.00, 196.00,
+               207.65, 207.65, 233.08, 233.08, 261.63, 261.63, 207.65, 207.65],
+      melType: 'triangle', bassType: 'sine',
+      tempo: 400, melGain: 0.26, bassGain: 0.30, melDecay: 0.48, bassDecay: 0.75,
+    },
+    {
+      // Theme 7: Pastel Peaks — bright & energetic (B major, saw wave bright)
+      name: 'Pastel Peaks',
+      melody: [493.88, 554.37, 622.25, 698.46, 783.99, 698.46, 622.25, 554.37,
+               587.33, 659.25, 739.99, 830.61, 987.77, 830.61, 739.99, 659.25],
+      bass:   [246.94, 246.94, 277.18, 277.18, 311.13, 311.13, 246.94, 246.94,
+               261.63, 261.63, 293.66, 293.66, 329.63, 329.63, 261.63, 261.63],
+      melType: 'sawtooth', bassType: 'triangle',
+      tempo: 340, melGain: 0.13, bassGain: 0.16, melDecay: 0.35, bassDecay: 0.55,
+    },
   ];
 
   function startMusic() {
@@ -231,46 +309,48 @@ const AudioEngine = (() => {
     isMusicPlaying = true;
     musicStep = 0;
 
+    const theme = THEME_MUSIC[currentTheme % THEME_MUSIC.length];
+
     musicInterval = setInterval(() => {
       if (!musicEnabled || !isMusicPlaying) return;
       const now = c.currentTime;
 
-      // Melody note (rich, warm marimba chime with pleasant sustain)
-      const freq = BGM_NOTES[musicStep % BGM_NOTES.length];
+      // Melody note
+      const freq = theme.melody[musicStep % theme.melody.length];
       const osc = c.createOscillator();
-      osc.type = 'triangle';
+      osc.type = theme.melType;
       osc.frequency.setValueAtTime(freq, now);
 
       const g = c.createGain();
       g.gain.setValueAtTime(0, now);
-      g.gain.linearRampToValueAtTime(0.24, now + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.002, now + 0.52);
+      g.gain.linearRampToValueAtTime(theme.melGain, now + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.002, now + theme.melDecay);
 
       osc.connect(g);
       g.connect(musicGain);
       osc.start(now);
-      osc.stop(now + 0.55);
+      osc.stop(now + theme.melDecay + 0.02);
 
-      // Warm acoustic bass note every 2 steps
+      // Bass note every 2 steps
       if (musicStep % 2 === 0) {
-        const bassFreq = BASS_NOTES[(musicStep / 2) % BASS_NOTES.length];
+        const bassFreq = theme.bass[(musicStep / 2) % theme.bass.length];
         const bassOsc = c.createOscillator();
-        bassOsc.type = 'sine';
+        bassOsc.type = theme.bassType;
         bassOsc.frequency.setValueAtTime(bassFreq, now);
 
         const bassG = c.createGain();
         bassG.gain.setValueAtTime(0, now);
-        bassG.gain.linearRampToValueAtTime(0.28, now + 0.03);
-        bassG.gain.exponentialRampToValueAtTime(0.002, now + 0.8);
+        bassG.gain.linearRampToValueAtTime(theme.bassGain, now + 0.03);
+        bassG.gain.exponentialRampToValueAtTime(0.002, now + theme.bassDecay);
 
         bassOsc.connect(bassG);
         bassG.connect(musicGain);
         bassOsc.start(now);
-        bassOsc.stop(now + 0.85);
+        bassOsc.stop(now + theme.bassDecay + 0.02);
       }
 
       musicStep++;
-    }, 450); // Relaxed ~133 BPM 8th notes
+    }, theme.tempo);
   }
 
   function stopMusic() {
@@ -278,6 +358,16 @@ const AudioEngine = (() => {
     if (musicInterval) {
       clearInterval(musicInterval);
       musicInterval = null;
+    }
+  }
+
+  function setTheme(worldIdx) {
+    const newTheme = Math.max(0, worldIdx || 0) % THEME_MUSIC.length;
+    if (newTheme === currentTheme && isMusicPlaying) return; // no change needed
+    currentTheme = newTheme;
+    if (musicEnabled) {
+      stopMusic();
+      startMusic();
     }
   }
 
@@ -311,7 +401,9 @@ const AudioEngine = (() => {
     playColorBomb, playCascade, playJelly, playBooster,
     playVictory, playDefeat, playClick, playIngredient,
     startMusic, stopMusic, toggleMusic, setMusicEnabled, isMusicEnabled,
+    setTheme,
     unlockAudio,
     setEnabled, isEnabled
   };
 })();
+

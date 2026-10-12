@@ -46,6 +46,15 @@ const Renderer = (() => {
 
   let currentWorld = 0;
   let bgPattern = null;
+  let lowPerfMode = false;
+  let _frameSkip = 0; // used by low-perf render throttling
+
+  function setLowPerfMode(on) {
+    lowPerfMode = !!on;
+    // Re-run resize to apply new DPR cap immediately
+    if (canvas) resize();
+  }
+
 
   function setWorld(worldIdx) {
     currentWorld = Math.max(0, worldIdx || 0);
@@ -122,7 +131,10 @@ const Renderer = (() => {
   }
 
   function resize() {
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    // Low-perf mode: cap to DPR=1 to halve pixel fill rate on high-DPI screens
+    const maxDpr = lowPerfMode ? 1 : 2;
+    dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
+
     const containerWidth  = Math.min(window.innerWidth, 460);
     const containerHeight = window.innerHeight - 250;
     const maxTile = Math.min(
@@ -197,7 +209,7 @@ const Renderer = (() => {
     ctx.fillStyle = '#faf7f0';
     ctx.fillRect(0, 0, w, h);
 
-    if (bgPattern) {
+    if (bgPattern && !lowPerfMode) {
       ctx.fillStyle = bgPattern;
       ctx.fillRect(0, 0, w, h);
     }
@@ -1708,7 +1720,7 @@ const Renderer = (() => {
       maxLife: 22
     });
 
-    const particleCount = matchCount >= 4 ? 20 : 12;
+    const particleCount = lowPerfMode ? (matchCount >= 4 ? 8 : 4) : (matchCount >= 4 ? 20 : 12);
     for (let i = 0; i < particleCount; i++) {
       const angle = (Math.PI * 2 * i) / particleCount + (Math.random() - 0.5) * 0.4;
       const speed = (matchCount >= 4 ? 3.5 : 2.2) + Math.random() * 3.5;
@@ -2040,5 +2052,8 @@ const Renderer = (() => {
     clearHint,
     setWorld,
     getWorld,
+    setLowPerfMode,
+    isLowPerfMode: () => lowPerfMode,
   };
 })();
+

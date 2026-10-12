@@ -56,12 +56,27 @@ const Game = (() => {
   const USER_KEY     = 'sr_username';
   const ASKED_USER_KEY = 'sr_asked_user';
   const ACCOUNTS_DB_KEY = 'sr_accounts_db'; // Store progress per-email/account for easy cloud recovery!
+  const HACKS_KEY    = 'sr_hacks';   // bool: unlock all levels toggle
+  const PERF_KEY     = 'sr_lowperf'; // bool: low-power render mode
 
   let progress = {};
   let coins = 100;
   let username = 'Guest Doodler';
   let userEmail = null;
   let askedUsername = false;
+
+  // ── Hacks & Performance Settings ─────────────────────────────────────────────
+  let hacksEnabled = false;  // default OFF — must be explicitly toggled in Settings
+  // Auto-detect low-end device: < 4 logical CPUs or < 2GB device memory (if exposed)
+  let lowPerfMode = (() => {
+    try {
+      const stored = localStorage.getItem(PERF_KEY);
+      if (stored !== null) return stored === '1';
+      const cpus = navigator.hardwareConcurrency || 4;
+      const mem  = navigator.deviceMemory || 4; // GB, Chrome only
+      return cpus <= 2 || mem <= 1;
+    } catch (_) { return false; }
+  })();
 
   function loadProgress(switchAccountEmail = null) {
     if (switchAccountEmail) {
@@ -83,6 +98,17 @@ const Game = (() => {
         progress = JSON.parse(localStorage.getItem(PROGRESS_KEY)) || {};
       } catch (_) { progress = {}; }
       if (!progress[1]) progress[1] = { stars: 0, score: 0, unlocked: true };
+
+      // Read hacks setting (default OFF)
+      try { hacksEnabled = localStorage.getItem(HACKS_KEY) === '1'; } catch (_) {}
+
+      // If Hacks ON: unlock every level (stars preserved). Otherwise normal progression.
+      if (hacksEnabled) {
+        for (let i = 1; i <= 500; i++) {
+          if (!progress[i]) progress[i] = { stars: 0, score: 0, unlocked: true };
+          else progress[i].unlocked = true;
+        }
+      }
 
       try {
         const storedCoins = localStorage.getItem(COINS_KEY);
@@ -207,6 +233,8 @@ const Game = (() => {
     updateBoosterUI();
     updateProfileUI();
     checkAndHideDownloadButtons();
+    // Apply low-perf mode on startup (auto-detected or user-saved preference)
+    Renderer.setLowPerfMode(lowPerfMode);
 
     // Unlock Audio Context on any user interaction (first tap)
     const unlockListener = () => {
@@ -294,6 +322,7 @@ const Game = (() => {
     levelDef = Levels[index];
     const worldIdx = Math.floor(index / 20);
     Renderer.setWorld(worldIdx);
+    AudioEngine.setTheme(worldIdx);
     grid = Board.createBoard(levelDef);
     score = 0;
     movesLeft = levelDef.moves;
@@ -647,6 +676,66 @@ const Game = (() => {
       }
     });
 
+    // ── Hacks toggle: unlock all 500 levels ────────────────────────────────────
+    document.getElementById('setting-hacks-toggle')?.addEventListener('click', (e) => {
+      hacksEnabled = !hacksEnabled;
+      try { localStorage.setItem(HACKS_KEY, hacksEnabled ? '1' : '0'); } catch (_) {}
+      e.target.textContent = hacksEnabled ? 'ON' : 'OFF';
+      e.target.classList.toggle('active', hacksEnabled);
+      // Apply immediately: unlock or re-lock levels
+      if (hacksEnabled) {
+        for (let i = 1; i <= 500; i++) {
+          if (!progress[i]) progress[i] = { stars: 0, score: 0, unlocked: true };
+          else progress[i].unlocked = true;
+        }
+      } else {
+        // Re-lock levels beyond what has been legitimately earned
+        let lastUnlocked = 1;
+        for (let i = 1; i <= 500; i++) {
+          if (progress[i] && progress[i].stars > 0) {
+            lastUnlocked = i + 1;
+          }
+        }
+        for (let i = lastUnlocked + 1; i <= 500; i++) {
+          if (progress[i]) progress[i].unlocked = false;
+        }
+      }
+      saveProgress();
+      if (state === STATE.MAP) {
+        renderSerpentineMap();
+      }
+      AudioEngine.playClick();
+    });
+
+    // ── Low-Power Mode toggle: reduce DPR + particle load ─────────────────────
+    document.getElementById('setting-perf-toggle')?.addEventListener('click', (e) => {
+      lowPerfMode = !lowPerfMode;
+      try { localStorage.setItem(PERF_KEY, lowPerfMode ? '1' : '0'); } catch (_) {}
+      e.target.textContent = lowPerfMode ? 'ON' : 'OFF';
+      e.target.classList.toggle('active', lowPerfMode);
+      Renderer.setLowPerfMode(lowPerfMode);
+      AudioEngine.playClick();
+    });
+
+    // Sync toggle states when settings screen is opened from anywhere
+    const syncSettingsUI = () => {
+      const hacksBtn = document.getElementById('setting-hacks-toggle');
+      if (hacksBtn) {
+        hacksBtn.textContent = hacksEnabled ? 'ON' : 'OFF';
+        hacksBtn.classList.toggle('active', hacksEnabled);
+      }
+      const perfBtn = document.getElementById('setting-perf-toggle');
+      if (perfBtn) {
+        perfBtn.textContent = lowPerfMode ? 'ON' : 'OFF';
+        perfBtn.classList.toggle('active', lowPerfMode);
+      }
+    };
+    document.getElementById('btn-map-settings')?.addEventListener('click', syncSettingsUI, true);
+    document.getElementById('btn-menu-options')?.addEventListener('click', syncSettingsUI, true);
+    document.getElementById('btn-pause-options')?.addEventListener('click', syncSettingsUI, true);
+
+
+
     // Boosters / Power-Ups Button Wiring
     ['hammer', 'free_swap', 'color_bomb', 'row_blast', 'extra_moves'].forEach(type => {
       document.getElementById(`btn-booster-${type}`)?.addEventListener('click', () => {
@@ -751,6 +840,21 @@ const Game = (() => {
 
     const cell1 = grid[r1][c1];
     const cell2 = grid[r2][c2];
+
+    // ── Obstacles (frosting/licorice) cannot be manually swapped ──
+    const obs1 = cell1.obstacle;
+    const obs2 = cell2.obstacle;
+    const isHardObstacle1 = obs1 === Config.OBSTACLE.FROSTING_1 || obs1 === Config.OBSTACLE.FROSTING_2 || obs1 === Config.OBSTACLE.LICORICE;
+    const isHardObstacle2 = obs2 === Config.OBSTACLE.FROSTING_1 || obs2 === Config.OBSTACLE.FROSTING_2 || obs2 === Config.OBSTACLE.LICORICE;
+    if ((isHardObstacle1 || isHardObstacle2) && !isFreeSwapBooster) {
+      AudioEngine.playInvalid();
+      const shakeR = isHardObstacle1 ? r1 : r2;
+      const shakeC = isHardObstacle1 ? c1 : c2;
+      shakeCell = { r: shakeR, c: shakeC };
+      setTimeout(() => { shakeCell = null; }, Config.INVALID_SHAKE_MS);
+      Renderer.spawnFloatText(shakeR, shakeC, 'Use a powerup!', '#ef4444', 16);
+      return;
+    }
 
     const isSp1 = (cell1.special !== Config.SPECIAL.NONE);
     const isSp2 = (cell2.special !== Config.SPECIAL.NONE);
