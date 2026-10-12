@@ -100,6 +100,22 @@ const Renderer = (() => {
     return { r, c };
   }
 
+  function clientToPixel(clientX, clientY) {
+    if (!canvas) return { px: 0, py: 0 };
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return { px: 0, py: 0 };
+    const boardW = tileSize * COLS;
+    const boardH = tileSize * ROWS;
+    const px = (clientX - rect.left) * (boardW / rect.width);
+    const py = (clientY - rect.top) * (boardH / rect.height);
+    return { px, py };
+  }
+
+  function clientToGrid(clientX, clientY) {
+    const { px, py } = clientToPixel(clientX, clientY);
+    return pixelToGrid(px, py);
+  }
+
   // ── Color & Palette ──────────────────────────────────────────────────────────
   const DOODLE_PALETTE = {
     1: { fill: '#ff5e7e', light: '#ffa3b5', dark: '#d81b47', ink: '#3b121e', glow: 'rgba(255, 94, 126, 0.70)' },
@@ -921,12 +937,33 @@ const Renderer = (() => {
     ctx.restore();
   }
 
+  function spawnConfetti(count = 40) {
+    const colors = ['#ff5e7e', '#ff9838', '#ffd13b', '#4cd97b', '#4ea8de', '#b57bed'];
+    const boardW = tileSize * COLS;
+    for (let i = 0; i < count; i++) {
+      particles.push({
+        x: Math.random() * boardW,
+        y: Math.random() * 50,
+        vx: (Math.random() - 0.5) * 6,
+        vy: 2 + Math.random() * 5,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        size: 5 + Math.random() * 4,
+        isStar: Math.random() > 0.35,
+        alpha: 1,
+        life: 0,
+        maxLife: 55 + Math.random() * 25
+      });
+    }
+  }
+
   return {
     init,
     resize,
     getTileSize,
     getBoardOffset,
     pixelToGrid,
+    clientToPixel,
+    clientToGrid,
     cellX,
     cellY,
     renderFrame,
@@ -937,6 +974,7 @@ const Renderer = (() => {
     spawnLaserBeam,
     spawnSupernova,
     spawnFloatText,
+    spawnConfetti,
     setHint,
     clearHint,
   };

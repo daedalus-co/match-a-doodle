@@ -30,9 +30,22 @@ const Game = (() => {
   let ordersLeft = {};
   let ingredientsLeft = 0;
   let hintTimeout = null;
+  let cascadeTimeout = null;
+  let frenzyTimeout = null;
+  let introTimeout = null;
+  let isConcludingLevel = false;
+  let star1Announced = false;
+  let star2Announced = false;
   let lastInputTime = Date.now();
   let animFrameId = null;
   let lastTimestamp = 0;
+
+  function clearAllGameTimeouts() {
+    clearHintTimer();
+    if (cascadeTimeout) { clearTimeout(cascadeTimeout); cascadeTimeout = null; }
+    if (frenzyTimeout) { clearTimeout(frenzyTimeout); frenzyTimeout = null; }
+    if (introTimeout) { clearTimeout(introTimeout); introTimeout = null; }
+  }
 
   // Powerup free swap limit: Max 2 non-matching swaps per powerup instance
   // Key: 'r,c' -> count
@@ -211,6 +224,8 @@ const Game = (() => {
   }
 
   function showMainMenu() {
+    clearAllGameTimeouts();
+    isConcludingLevel = false;
     state = STATE.MAIN_MENU;
     updateCurrencyUI();
     updateProfileUI();
@@ -237,6 +252,11 @@ const Game = (() => {
   // ── Level Start ──────────────────────────────────────────────────────────────
 
   function startLevel(index) {
+    clearAllGameTimeouts();
+    isConcludingLevel = false;
+    star1Announced = false;
+    star2Announced = false;
+
     currentLevelIndex = index;
     levelDef = Levels[index];
     grid = Board.createBoard(levelDef);
@@ -250,7 +270,6 @@ const Game = (() => {
     ordersLeft = levelDef.orders ? { ...levelDef.orders } : {};
     ingredientsLeft = levelDef.ingredientCount || 0;
     Renderer.clearHint();
-    clearHintTimer();
     state = STATE.LEVEL_INTRO;
     showScreen('screen-game');
     updateHUD();
@@ -273,7 +292,7 @@ const Game = (() => {
     setText('intro-star-2', t[1].toLocaleString());
     setText('intro-star-3', t[2].toLocaleString());
 
-    setTimeout(() => {
+    introTimeout = setTimeout(() => {
       state = STATE.PLAYING;
       scheduleHint();
       // Start background music automatically if enabled
@@ -305,11 +324,7 @@ const Game = (() => {
     let dragStartPx = null;
 
     canvas.addEventListener('mousedown', (e) => {
-      const rect = canvas.getBoundingClientRect();
-      const scaleX = (canvas.width / window.devicePixelRatio) / rect.width;
-      const scaleY = (canvas.height / window.devicePixelRatio) / rect.height;
-      const px = (e.clientX - rect.left) * scaleX;
-      const py = (e.clientY - rect.top) * scaleY;
+      const { px, py } = Renderer.clientToPixel(e.clientX, e.clientY);
       const gridPos = Renderer.pixelToGrid(px, py);
 
       dragStartPx = { x: e.clientX, y: e.clientY };
@@ -350,11 +365,7 @@ const Game = (() => {
     canvas.addEventListener('touchstart', (e) => {
       if (e.cancelable) e.preventDefault();
       const touch = e.touches[0];
-      const rect = canvas.getBoundingClientRect();
-      const scaleX = (canvas.width / window.devicePixelRatio) / rect.width;
-      const scaleY = (canvas.height / window.devicePixelRatio) / rect.height;
-      const px = (touch.clientX - rect.left) * scaleX;
-      const py = (touch.clientY - rect.top) * scaleY;
+      const { px, py } = Renderer.clientToPixel(touch.clientX, touch.clientY);
       const gridPos = Renderer.pixelToGrid(px, py);
 
       dragStartPx = { x: touch.clientX, y: touch.clientY };
@@ -620,15 +631,13 @@ const Game = (() => {
 
     const canvas = document.getElementById('game-canvas');
     let px, py;
-    if (e._px !== undefined) {
+    if (e._px !== undefined && e._py !== undefined) {
       px = e._px;
       py = e._py;
     } else {
-      const rect = canvas.getBoundingClientRect();
-      const scaleX = (canvas.width / window.devicePixelRatio) / rect.width;
-      const scaleY = (canvas.height / window.devicePixelRatio) / rect.height;
-      px = (e.clientX - rect.left) * scaleX;
-      py = (e.clientY - rect.top) * scaleY;
+      const p = Renderer.clientToPixel(e.clientX, e.clientY);
+      px = p.px;
+      py = p.py;
     }
 
     const pos = Renderer.pixelToGrid(px, py);
@@ -860,6 +869,9 @@ const Game = (() => {
   }
 
   function triggerCascade() {
+    if (state === STATE.VICTORY || state === STATE.DEFEAT) return;
+    state = STATE.ANIMATING;
+
     Board.applyGravity(grid, levelDef.candyPool);
 
     const exited = Board.stepIngredients(grid);
@@ -874,7 +886,9 @@ const Game = (() => {
       updateHUD();
     }
 
-    setTimeout(() => {
+    cascadeTimeout = setTimeout(() => {
+      if (state === STATE.VICTORY || state === STATE.DEFEAT) return;
+
       const newMatches = Board.findAllMatches(grid);
 
       if (newMatches.length > 0) {
@@ -903,9 +917,14 @@ const Game = (() => {
           Renderer.spawnFloatText(Math.floor(Config.ROWS / 2), Math.floor(Config.COLS / 2), label, '#ffd13b', 26);
         }
 
-        setTimeout(() => triggerCascade(), Config.BOARD_ANIM_MS);
+        cascadeTimeout = setTimeout(() => triggerCascade(), Config.BOARD_ANIM_MS);
       } else {
         cascadeLevel = 0;
+        if (isConcludingLevel) {
+          handleVictory();
+          return;
+        }
+
         const hint = Board.findHint(grid);
         if (!hint) {
           Board.reshuffle(grid, levelDef.candyPool);
@@ -913,8 +932,10 @@ const Game = (() => {
         }
 
         checkWinLose();
-        state = STATE.PLAYING;
-        scheduleHint();
+        if (state === STATE.ANIMATING) {
+          state = STATE.PLAYING;
+          scheduleHint();
+        }
       }
     }, Config.BOARD_ANIM_MS);
   }
@@ -961,22 +982,48 @@ const Game = (() => {
     updateStarMeter();
   }
 
-  // ── Win / Lose Detection ──────────────────────────────────────────────────────
+  // ── Win / Lose Detection & Dopamine Climax ───────────────────────────────────
 
   function checkWinLose() {
+    if (isConcludingLevel || state === STATE.VICTORY || state === STATE.DEFEAT) return;
+
     const obj = levelDef.objective;
     const [s1, s2, s3] = levelDef.stars;
 
-    // Rule: Game is ALWAYS won if player achieves 3 Stars!
+    // Intermediate Dopamine Milestones for score
+    if (!star1Announced && score >= s1) {
+      star1Announced = true;
+      Renderer.spawnFloatText(Math.floor(Config.ROWS / 2), Math.floor(Config.COLS / 2), '★ Star 1 Reached! Aim for 3! ★', '#10b981', 22);
+      try { AudioEngine.playCascade(3); } catch (_) {}
+    }
+    if (!star2Announced && score >= s2) {
+      star2Announced = true;
+      Renderer.spawnFloatText(Math.floor(Config.ROWS / 2), Math.floor(Config.COLS / 2), '★★ Star 2 Reached! Almost 3! ★★', '#3b82f6', 22);
+      try { AudioEngine.playCascade(4); } catch (_) {}
+    }
+
+    // 1. Reaching 3 Stars is an immediate victory!
     if (score >= s3) {
-      handleVictory();
+      if (movesLeft > 0) {
+        triggerDoodleFrenzy();
+      } else {
+        handleVictory();
+      }
       return;
     }
 
+    // 2. Objective-specific goal check
     let goalMet = false;
     if (obj === 'score') {
-      // 1 Star is minimum clear requirement
-      goalMet = score >= s1;
+      // In score levels, player continues playing their moves to aim for 2 and 3 stars!
+      if (movesLeft <= 0) {
+        if (score >= s1) {
+          handleVictory();
+        } else {
+          handleDefeat();
+        }
+      }
+      return;
     } else if (obj === 'jelly') {
       goalMet = jelliesLeft === 0;
     } else if (obj === 'order') {
@@ -991,14 +1038,121 @@ const Game = (() => {
     }
 
     if (goalMet) {
-      handleVictory();
+      if (movesLeft > 0) {
+        triggerDoodleFrenzy();
+      } else {
+        handleVictory();
+      }
     } else if (movesLeft <= 0) {
-      // Out of moves: if player earned at least 1 star, they still clear the level!
       if (score >= s1) {
         handleVictory();
       } else {
         handleDefeat();
       }
+    }
+  }
+
+  function triggerDoodleFrenzy() {
+    if (isConcludingLevel) return;
+    isConcludingLevel = true;
+    state = STATE.ANIMATING;
+    clearHintTimer();
+    Renderer.clearHint();
+
+    try { AudioEngine.playVictory(); } catch (_) {}
+    Renderer.spawnFloatText(Math.floor(Config.ROWS / 2), Math.floor(Config.COLS / 2), 'DOODLE FRENZY! 🎨✨', '#ffd13b', 32);
+    Renderer.spawnConfetti(45);
+
+    const bonusMoves = movesLeft;
+    movesLeft = 0;
+    updateHUD();
+
+    // Find normal candies on board to convert
+    const candidates = [];
+    for (let r = 0; r < Config.ROWS; r++) {
+      for (let c = 0; c < Config.COLS; c++) {
+        if (grid[r][c] && grid[r][c].color > 0 && grid[r][c].color < 7 && grid[r][c].special === Config.SPECIAL.NONE) {
+          candidates.push({ r, c });
+        }
+      }
+    }
+
+    // Shuffle candidates
+    for (let i = candidates.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+    }
+
+    const specials = [
+      Config.SPECIAL.STRIPED_H,
+      Config.SPECIAL.STRIPED_V,
+      Config.SPECIAL.WRAPPED,
+      Config.SPECIAL.COLOR_BOMB
+    ];
+
+    const convertCount = Math.min(bonusMoves, candidates.length);
+    let converted = 0;
+
+    function stepConvert() {
+      if (state !== STATE.ANIMATING) return;
+      if (converted < convertCount) {
+        const pos = candidates[converted];
+        const sp = specials[converted % specials.length];
+        grid[pos.r][pos.c].special = sp;
+        score += 1500;
+        updateHUD();
+        updateStarMeter();
+        Renderer.spawnFloatText(pos.r, pos.c, '+1,500 FRENZY!', '#ffd13b', 20);
+        Renderer.spawnDoodleBurst(pos.r, pos.c, grid[pos.r][pos.c].color, 4);
+        try { AudioEngine.playPop(); } catch (_) {}
+        converted++;
+        frenzyTimeout = setTimeout(stepConvert, 120);
+      } else {
+        const leftover = bonusMoves - convertCount;
+        if (leftover > 0) {
+          score += leftover * 1500;
+          updateHUD();
+          updateStarMeter();
+        }
+        frenzyTimeout = setTimeout(() => {
+          detonateAllSpecials();
+        }, 260);
+      }
+    }
+
+    if (convertCount > 0) {
+      stepConvert();
+    } else {
+      score += bonusMoves * 1500;
+      updateHUD();
+      updateStarMeter();
+      handleVictory();
+    }
+  }
+
+  function detonateAllSpecials() {
+    if (state !== STATE.ANIMATING) return;
+    let activated = 0;
+    for (let r = 0; r < Config.ROWS; r++) {
+      for (let c = 0; c < Config.COLS; c++) {
+        const cell = grid[r][c];
+        if (cell && cell.special !== Config.SPECIAL.NONE) {
+          activated++;
+          if (cell.special === Config.SPECIAL.STRIPED_H) Renderer.spawnLaserBeam('row', r, '#ff5e7e');
+          else if (cell.special === Config.SPECIAL.STRIPED_V) Renderer.spawnLaserBeam('col', c, '#4ea8de');
+          else if (cell.special === Config.SPECIAL.WRAPPED) Renderer.spawnSupernova(Renderer.cellX(c), Renderer.cellY(r), 100, '#ff9838');
+          else if (cell.special === Config.SPECIAL.COLOR_BOMB) Renderer.spawnSupernova(Renderer.cellX(c), Renderer.cellY(r), 140, '#ffd13b');
+
+          const res = Specials.activate(grid, r, c);
+          processMatchResult(res, false);
+        }
+      }
+    }
+
+    if (activated > 0) {
+      triggerCascade();
+    } else {
+      handleVictory();
     }
   }
 
@@ -1011,6 +1165,8 @@ const Game = (() => {
   }
 
   function handleVictory() {
+    clearAllGameTimeouts();
+    isConcludingLevel = false;
     state = STATE.VICTORY;
     try { AudioEngine.playVictory(); } catch (_) {}
     const stars = calculateStars();
@@ -1029,6 +1185,8 @@ const Game = (() => {
   }
 
   function handleDefeat() {
+    clearAllGameTimeouts();
+    isConcludingLevel = false;
     state = STATE.DEFEAT;
     try { AudioEngine.playDefeat(); } catch (_) {}
     showDefeatScreen();
@@ -1199,6 +1357,8 @@ const Game = (() => {
   }
 
   function showMap() {
+    clearAllGameTimeouts();
+    isConcludingLevel = false;
     state = STATE.MAP;
     selected = null;
     renderSerpentineMap();
@@ -1206,20 +1366,55 @@ const Game = (() => {
   }
 
   function showVictoryScreen(stars, finalScore, coinsWon = 50) {
+    clearAllGameTimeouts();
+    isConcludingLevel = false;
     setText('victory-score', finalScore.toLocaleString());
     setText('victory-coins-reward', `+${coinsWon} Gold Coins! 🪙`);
     const starsEl = document.getElementById('victory-stars');
     if (starsEl) {
-      starsEl.innerHTML = [1,2,3].map(i =>
+      starsEl.innerHTML = [1, 2, 3].map(i =>
         `<span class="star ${i <= stars ? 'filled' : ''}">★</span>`
       ).join('');
     }
     const nextBtn = document.getElementById('btn-next-level');
-    if (nextBtn) nextBtn.disabled = currentLevelIndex >= Levels.length - 1;
+    if (nextBtn) {
+      nextBtn.disabled = currentLevelIndex >= Levels.length - 1;
+      nextBtn.onclick = (e) => {
+        if (e) e.stopPropagation();
+        try { AudioEngine.playClick(); } catch (_) {}
+        nextLevel();
+      };
+    }
+    const retryBtn = document.getElementById('btn-victory-retry');
+    if (retryBtn) {
+      retryBtn.onclick = (e) => {
+        if (e) e.stopPropagation();
+        try { AudioEngine.playClick(); } catch (_) {}
+        startLevel(currentLevelIndex);
+      };
+    }
+    const mapBtn = document.getElementById('btn-quit-to-map');
+    if (mapBtn) {
+      mapBtn.onclick = (e) => {
+        if (e) e.stopPropagation();
+        try { AudioEngine.playClick(); } catch (_) {}
+        showMap();
+      };
+    }
+    const homeBtn = document.getElementById('btn-victory-home');
+    if (homeBtn) {
+      homeBtn.onclick = (e) => {
+        if (e) e.stopPropagation();
+        try { AudioEngine.playClick(); } catch (_) {}
+        showMainMenu();
+      };
+    }
     showScreen('screen-victory');
   }
 
   function showDefeatScreen() {
+    clearAllGameTimeouts();
+    isConcludingLevel = false;
     setText('defeat-score', score.toLocaleString());
     showScreen('screen-defeat');
   }
@@ -1235,6 +1430,8 @@ const Game = (() => {
   }
 
   function nextLevel() {
+    clearAllGameTimeouts();
+    isConcludingLevel = false;
     if (currentLevelIndex < Levels.length - 1) {
       startLevel(currentLevelIndex + 1);
     } else {
