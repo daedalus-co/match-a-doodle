@@ -167,6 +167,37 @@ const Game = (() => {
 
   // ── Init ─────────────────────────────────────────────────────────────────────
 
+  function isNativeOrInstalledApp() {
+    try {
+      if (window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform()) {
+        return true;
+      }
+      const ua = (navigator.userAgent || '').toLowerCase();
+      if (ua.includes('wv') || ua.includes('capacitor') || ua.includes('androidapp') || window.Android !== undefined) {
+        return true;
+      }
+      if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) {
+        return true;
+      }
+      if (window.navigator && window.navigator.standalone === true) {
+        return true;
+      }
+      if (localStorage.getItem('mad_apk_downloaded') === '1' || localStorage.getItem('sr_downloaded_apk') === '1') {
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  function checkAndHideDownloadButtons() {
+    if (isNativeOrInstalledApp()) {
+      const btnApk = document.getElementById('btn-download-apk');
+      if (btnApk) btnApk.style.display = 'none';
+      const btnManual = document.getElementById('btn-manual-install');
+      if (btnManual) btnManual.style.display = 'none';
+    }
+  }
+
   function init() {
     loadProgress();
     Boosters.init({ onMovesAdded: (n) => { movesLeft += n; updateHUD(); } });
@@ -175,6 +206,7 @@ const Game = (() => {
     updateCurrencyUI();
     updateBoosterUI();
     updateProfileUI();
+    checkAndHideDownloadButtons();
 
     // Unlock Audio Context on any user interaction (first tap)
     const unlockListener = () => {
@@ -229,6 +261,7 @@ const Game = (() => {
     state = STATE.MAIN_MENU;
     updateCurrencyUI();
     updateProfileUI();
+    checkAndHideDownloadButtons();
     let totalStars = 0;
     Object.values(progress).forEach(p => { totalStars += (p.stars || 0); });
     setText('menu-total-stars', totalStars);
@@ -259,6 +292,8 @@ const Game = (() => {
 
     currentLevelIndex = index;
     levelDef = Levels[index];
+    const worldIdx = Math.floor(index / 20);
+    Renderer.setWorld(worldIdx);
     grid = Board.createBoard(levelDef);
     score = 0;
     movesLeft = levelDef.moves;
@@ -424,6 +459,16 @@ const Game = (() => {
       AudioEngine.playClick();
       showMainMenu();
     });
+
+    const markDownloaded = () => {
+      try {
+        localStorage.setItem('mad_apk_downloaded', '1');
+        localStorage.setItem('sr_downloaded_apk', '1');
+        checkAndHideDownloadButtons();
+      } catch (_) {}
+    };
+    document.getElementById('btn-download-apk')?.addEventListener('click', markDownloaded);
+    document.getElementById('btn-manual-install')?.addEventListener('click', markDownloaded);
 
     // Coins Continue (10 Coins per Resume)
     document.getElementById('btn-buy-moves-coins')?.addEventListener('click', () => {
@@ -753,12 +798,12 @@ const Game = (() => {
     }
 
     state = STATE.ANIMATING;
-    movesLeft = Math.max(0, movesLeft - 1);
     cascadeLevel = 0;
-    updateHUD();
 
     // ── Execute Powerup Cross-Combos with Grand Visuals ────────────────────────
     if (isSpecialCombo) {
+      movesLeft = Math.max(0, movesLeft - 1);
+      updateHUD();
       Renderer.startSwapAnimation(r1, c1, r2, c2, Config.BOARD_ANIM_MS, () => {
         // Trigger grand combo animations based on special types
         const sp1 = cell1.special;
@@ -777,8 +822,8 @@ const Game = (() => {
           // Double Wrapped: 5x5 explosion
           Renderer.spawnSupernova(Renderer.cellX(c1), Renderer.cellY(r1), 180, '#ff9838');
           Renderer.spawnFloatText(r1, c1, '5x5 Mega Blast!', '#ff9838', 28);
-        } else if ((sp1 === Config.SPECIAL.STRIPED_H || sp1 === Config.SPECIAL.STRIPED_V) &&
-                   (sp2 === Config.SPECIAL.WRAPPED || sp1 === Config.SPECIAL.WRAPPED)) {
+        } else if (((sp1 === Config.SPECIAL.STRIPED_H || sp1 === Config.SPECIAL.STRIPED_V) && sp2 === Config.SPECIAL.WRAPPED) ||
+                   ((sp2 === Config.SPECIAL.STRIPED_H || sp2 === Config.SPECIAL.STRIPED_V) && sp1 === Config.SPECIAL.WRAPPED)) {
           // Striped + Wrapped: 3-row x 3-col giant cross laser
           for (let dr = -1; dr <= 1; dr++) {
             if (r1 + dr >= 0 && r1 + dr < Config.ROWS) Renderer.spawnLaserBeam('row', r1 + dr, '#ff5e7e');
@@ -804,6 +849,8 @@ const Game = (() => {
 
     // Color Bomb + Normal Candy
     if (isColorBombActivation) {
+      movesLeft = Math.max(0, movesLeft - 1);
+      updateHUD();
       Renderer.startSwapAnimation(r1, c1, r2, c2, Config.BOARD_ANIM_MS, () => {
         let bombR = r1, bombC = c1, targetCol = cell2.color;
         if (cell2.special === Config.SPECIAL.COLOR_BOMB) {
@@ -846,6 +893,9 @@ const Game = (() => {
         scheduleHint();
         return;
       }
+
+      movesLeft = Math.max(0, movesLeft - 1);
+      updateHUD();
 
       const actualMatches = Board.findAllMatches(grid);
 
@@ -933,7 +983,7 @@ const Game = (() => {
         }
 
         checkWinLose();
-        if (state === STATE.ANIMATING) {
+        if (!isConcludingLevel && state === STATE.ANIMATING) {
           state = STATE.PLAYING;
           scheduleHint();
         }
@@ -1052,11 +1102,7 @@ const Game = (() => {
         handleVictory();
       }
     } else if (movesLeft <= 0) {
-      if (score >= s1) {
-        handleVictory();
-      } else {
-        handleDefeat();
-      }
+      handleDefeat();
     }
   }
 
@@ -1102,7 +1148,7 @@ const Game = (() => {
     let converted = 0;
 
     function stepConvert() {
-      if (state !== STATE.ANIMATING) return;
+      if (!isConcludingLevel) return;
       if (converted < convertCount) {
         const pos = candidates[converted];
         const sp = specials[converted % specials.length];
@@ -1139,19 +1185,25 @@ const Game = (() => {
   }
 
   function detonateAllSpecials() {
-    if (state !== STATE.ANIMATING) return;
+    if (!isConcludingLevel) return;
     let activated = 0;
     for (let r = 0; r < Config.ROWS; r++) {
       for (let c = 0; c < Config.COLS; c++) {
         const cell = grid[r][c];
         if (cell && cell.special !== Config.SPECIAL.NONE) {
           activated++;
-          if (cell.special === Config.SPECIAL.STRIPED_H) Renderer.spawnLaserBeam('row', r, '#ff5e7e');
-          else if (cell.special === Config.SPECIAL.STRIPED_V) Renderer.spawnLaserBeam('col', c, '#4ea8de');
-          else if (cell.special === Config.SPECIAL.WRAPPED) Renderer.spawnSupernova(Renderer.cellX(c), Renderer.cellY(r), 100, '#ff9838');
-          else if (cell.special === Config.SPECIAL.COLOR_BOMB) Renderer.spawnSupernova(Renderer.cellX(c), Renderer.cellY(r), 140, '#ffd13b');
-
-          const res = Specials.activate(grid, r, c);
+          let res;
+          if (cell.special === Config.SPECIAL.COLOR_BOMB) {
+            Renderer.spawnSupernova(Renderer.cellX(c), Renderer.cellY(r), 140, '#ffd13b');
+            const pool = (levelDef && levelDef.candyPool) || [1, 2, 3, 4];
+            const targetCol = pool[Math.floor(Math.random() * pool.length)];
+            res = Specials.activateColorBomb(grid, r, c, targetCol);
+          } else {
+            if (cell.special === Config.SPECIAL.STRIPED_H) Renderer.spawnLaserBeam('row', r, '#ff5e7e');
+            else if (cell.special === Config.SPECIAL.STRIPED_V) Renderer.spawnLaserBeam('col', c, '#4ea8de');
+            else if (cell.special === Config.SPECIAL.WRAPPED) Renderer.spawnSupernova(Renderer.cellX(c), Renderer.cellY(r), 100, '#ff9838');
+            res = Specials.activate(grid, r, c);
+          }
           processMatchResult(res, false);
         }
       }

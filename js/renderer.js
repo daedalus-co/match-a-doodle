@@ -44,19 +44,78 @@ const Renderer = (() => {
     window.addEventListener('resize', resize);
   }
 
+  let currentWorld = 0;
   let bgPattern = null;
+
+  function setWorld(worldIdx) {
+    currentWorld = Math.max(0, worldIdx || 0);
+    createBgPattern();
+  }
+
+  function getWorld() {
+    return currentWorld;
+  }
 
   function createBgPattern() {
     try {
       const pCanvas = document.createElement('canvas');
-      pCanvas.width = 16;
-      pCanvas.height = 16;
       const pCtx = pCanvas.getContext('2d');
-      pCtx.fillStyle = 'rgba(70, 60, 50, 0.08)';
-      pCtx.beginPath();
-      pCtx.arc(8, 8, 1, 0, Math.PI * 2);
-      pCtx.fill();
-      bgPattern = ctx.createPattern(pCanvas, 'repeat');
+      const theme = currentWorld % 8;
+
+      if (theme === 1) {
+        // Graph Paper Grove: blueprint grid lines
+        pCanvas.width = 20;
+        pCanvas.height = 20;
+        pCtx.strokeStyle = 'rgba(78, 168, 222, 0.18)';
+        pCtx.lineWidth = 1;
+        pCtx.strokeRect(0.5, 0.5, 19, 19);
+      } else if (theme === 3) {
+        // Chalkboard Caverns: chalk dust flecks
+        pCanvas.width = 24;
+        pCanvas.height = 24;
+        pCtx.fillStyle = 'rgba(60, 55, 50, 0.08)';
+        pCtx.fillRect(4, 4, 2, 2);
+        pCtx.fillRect(16, 12, 1.5, 1.5);
+        pCtx.fillRect(8, 20, 1.5, 1.5);
+      } else if (theme === 4) {
+        // Origami Oasis: diagonal crease dashes
+        pCanvas.width = 24;
+        pCanvas.height = 24;
+        pCtx.strokeStyle = 'rgba(80, 70, 60, 0.09)';
+        pCtx.lineWidth = 1;
+        pCtx.setLineDash([3, 5]);
+        pCtx.beginPath();
+        pCtx.moveTo(0, 0); pCtx.lineTo(24, 24);
+        pCtx.stroke();
+      } else if (theme === 5) {
+        // Watercolor Waves: subtle wave ripples
+        pCanvas.width = 28;
+        pCanvas.height = 20;
+        pCtx.strokeStyle = 'rgba(78, 168, 222, 0.14)';
+        pCtx.lineWidth = 1.2;
+        pCtx.beginPath();
+        pCtx.moveTo(2, 10);
+        pCtx.bezierCurveTo(9, 4, 19, 16, 26, 10);
+        pCtx.stroke();
+      } else if (theme === 6) {
+        // Inkwell Valley: parchment ledger lines
+        pCanvas.width = 20;
+        pCanvas.height = 18;
+        pCtx.strokeStyle = 'rgba(120, 80, 50, 0.12)';
+        pCtx.lineWidth = 1;
+        pCtx.beginPath();
+        pCtx.moveTo(0, 9); pCtx.lineTo(20, 9);
+        pCtx.stroke();
+      } else {
+        // Themes 0, 2, 7: Classic notebook paper dot grid
+        pCanvas.width = 16;
+        pCanvas.height = 16;
+        pCtx.fillStyle = 'rgba(70, 60, 50, 0.08)';
+        pCtx.beginPath();
+        pCtx.arc(8, 8, 1, 0, Math.PI * 2);
+        pCtx.fill();
+      }
+      bgPattern = ctx ? ctx.createPattern(pCanvas, 'repeat') : null;
     } catch (_) {
       bgPattern = null;
     }
@@ -345,18 +404,99 @@ const Renderer = (() => {
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
-    switch (colorId) {
-      case 1: drawHeartDoodle(cx, cy, r); break;
-      case 2: drawOrangeSwirlDoodle(cx, cy, r); break;
-      case 3: drawStarDoodle(cx, cy, r); break;
-      case 4: drawCloverDoodle(cx, cy, r); break;
-      case 5: drawDewdropDoodle(cx, cy, r); break;
-      case 6: drawGrapeDoodle(cx, cy, r); break;
-      default:
-        ctx.beginPath();
-        ctx.arc(cx, cy, r * 0.85, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
+    const theme = currentWorld % 8;
+    if (theme === 1) {
+      // World 2, 10, 18... Graph Paper Grove (Drafting & Blueprint Geometry)
+      switch (colorId) {
+        case 1: drawIsometricCubeDoodle(cx, cy, r); break;
+        case 2: drawCompassDoodle(cx, cy, r); break;
+        case 3: drawTriangleRulerDoodle(cx, cy, r); break;
+        case 4: drawInfinityDoodle(cx, cy, r); break;
+        case 5: drawTargetDoodle(cx, cy, r); break;
+        case 6: drawCrystalPrismDoodle(cx, cy, r); break;
+        default: drawTargetDoodle(cx, cy, r); break;
+      }
+    } else if (theme === 2) {
+      // World 3, 11, 19... Crayon Canyon (Nature & Wilderness)
+      switch (colorId) {
+        case 1: drawAppleDoodle(cx, cy, r); break;
+        case 2: drawSunshineDoodle(cx, cy, r); break;
+        case 3: drawLightningDoodle(cx, cy, r); break;
+        case 4: drawLeafDoodle(cx, cy, r); break;
+        case 5: drawCloudRainDoodle(cx, cy, r); break;
+        case 6: drawButterflyDoodle(cx, cy, r); break;
+        default: drawAppleDoodle(cx, cy, r); break;
+      }
+    } else if (theme === 3) {
+      // World 4, 12, 20... Chalkboard Caverns (Cosmos & Science)
+      switch (colorId) {
+        case 1: drawFlaskDoodle(cx, cy, r); break;
+        case 2: drawSaturnDoodle(cx, cy, r); break;
+        case 3: drawLightbulbDoodle(cx, cy, r); break;
+        case 4: drawAtomDoodle(cx, cy, r); break;
+        case 5: drawCrescentMoonDoodle(cx, cy, r); break;
+        case 6: drawRocketDoodle(cx, cy, r); break;
+        default: drawFlaskDoodle(cx, cy, r); break;
+      }
+    } else if (theme === 4) {
+      // World 5, 13, 21... Origami Oasis (Paper Folding Art)
+      switch (colorId) {
+        case 1: drawOrigamiCraneDoodle(cx, cy, r); break;
+        case 2: drawOrigamiBoatDoodle(cx, cy, r); break;
+        case 3: drawOrigamiShurikenDoodle(cx, cy, r); break;
+        case 4: drawOrigamiLotusDoodle(cx, cy, r); break;
+        case 5: drawOrigamiPlaneDoodle(cx, cy, r); break;
+        case 6: drawOrigamiFoxDoodle(cx, cy, r); break;
+        default: drawOrigamiCraneDoodle(cx, cy, r); break;
+      }
+    } else if (theme === 5) {
+      // World 6, 14, 22... Watercolor Waves (Marine & Aquatic)
+      switch (colorId) {
+        case 1: drawSeashellDoodle(cx, cy, r); break;
+        case 2: drawStarfishDoodle(cx, cy, r); break;
+        case 3: drawFishDoodle(cx, cy, r); break;
+        case 4: drawOceanWaveDoodle(cx, cy, r); break;
+        case 5: drawJellyfishDoodle(cx, cy, r); break;
+        case 6: drawSeahorseDoodle(cx, cy, r); break;
+        default: drawSeashellDoodle(cx, cy, r); break;
+      }
+    } else if (theme === 6) {
+      // World 7, 15, 23... Inkwell Valley (Vintage Calligraphy)
+      switch (colorId) {
+        case 1: drawWaxSealDoodle(cx, cy, r); break;
+        case 2: drawQuillPenDoodle(cx, cy, r); break;
+        case 3: drawSkeletonKeyDoodle(cx, cy, r); break;
+        case 4: drawTrebleClefDoodle(cx, cy, r); break;
+        case 5: drawInkDropDoodle(cx, cy, r); break;
+        case 6: drawCrownDoodle(cx, cy, r); break;
+        default: drawWaxSealDoodle(cx, cy, r); break;
+      }
+    } else if (theme === 7) {
+      // World 8, 16, 24... Pastel Peaks (Bakery & Confections)
+      switch (colorId) {
+        case 1: drawCupcakeDoodle(cx, cy, r); break;
+        case 2: drawDonutDoodle(cx, cy, r); break;
+        case 3: drawCroissantDoodle(cx, cy, r); break;
+        case 4: drawLollipopDoodle(cx, cy, r); break;
+        case 5: drawIceCreamDoodle(cx, cy, r); break;
+        case 6: drawBonbonDoodle(cx, cy, r); break;
+        default: drawCupcakeDoodle(cx, cy, r); break;
+      }
+    } else {
+      // Theme 0: Sketchy Hills (Classic Sketch Doodles)
+      switch (colorId) {
+        case 1: drawHeartDoodle(cx, cy, r); break;
+        case 2: drawOrangeSwirlDoodle(cx, cy, r); break;
+        case 3: drawStarDoodle(cx, cy, r); break;
+        case 4: drawCloverDoodle(cx, cy, r); break;
+        case 5: drawDewdropDoodle(cx, cy, r); break;
+        case 6: drawGrapeDoodle(cx, cy, r); break;
+        default:
+          ctx.beginPath();
+          ctx.arc(cx, cy, r * 0.85, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+      }
     }
 
     ctx.restore();
@@ -481,6 +621,927 @@ const Renderer = (() => {
     ctx.beginPath();
     ctx.moveTo(cx, cy - s * 0.5); ctx.lineTo(cx, cy + s * 0.5);
     ctx.moveTo(cx - s * 0.45, cy); ctx.lineTo(cx + s * 0.45, cy);
+    ctx.stroke();
+  }
+
+  // ── Theme 1: Graph Paper Grove (Geometry & Drafting) ─────────────────────────
+  function drawIsometricCubeDoodle(cx, cy, r) {
+    const s = r * 0.82;
+    const topY = cy - s * 0.9;
+    const midY = cy - s * 0.1;
+    const botY = cy + s * 0.8;
+    const leftX = cx - s * 0.85;
+    const rightX = cx + s * 0.85;
+
+    ctx.beginPath();
+    ctx.moveTo(cx, topY);
+    ctx.lineTo(rightX, cy - s * 0.45);
+    ctx.lineTo(rightX, cy + s * 0.35);
+    ctx.lineTo(cx, botY);
+    ctx.lineTo(leftX, cy + s * 0.35);
+    ctx.lineTo(leftX, cy - s * 0.45);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(cx, midY); ctx.lineTo(cx, botY);
+    ctx.moveTo(cx, midY); ctx.lineTo(leftX, cy - s * 0.45);
+    ctx.moveTo(cx, midY); ctx.lineTo(rightX, cy - s * 0.45);
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+    ctx.beginPath();
+    ctx.moveTo(cx, topY);
+    ctx.lineTo(rightX, cy - s * 0.45);
+    ctx.lineTo(cx, midY);
+    ctx.lineTo(leftX, cy - s * 0.45);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function drawCompassDoodle(cx, cy, r) {
+    const s = r * 0.85;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - s * 0.8);
+    ctx.lineTo(cx - s * 0.75, cy + s * 0.85);
+    ctx.lineTo(cx - s * 0.4, cy + s * 0.85);
+    ctx.lineTo(cx, cy - s * 0.4);
+    ctx.lineTo(cx + s * 0.4, cy + s * 0.85);
+    ctx.lineTo(cx + s * 0.75, cy + s * 0.85);
+    ctx.lineTo(cx, cy - s * 0.8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(cx, cy - s * 0.75, s * 0.22, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(cx, cy - s * 0.1, s * 0.55, 0.2 * Math.PI, 0.8 * Math.PI);
+    ctx.stroke();
+  }
+
+  function drawTriangleRulerDoodle(cx, cy, r) {
+    const s = r * 0.88;
+    const x1 = cx - s * 0.75, y1 = cy + s * 0.85;
+    const x2 = cx + s * 0.85, y2 = cy + s * 0.85;
+    const x3 = cx - s * 0.75, y3 = cy - s * 0.85;
+
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.lineTo(x3, y3);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#faf7f0';
+    ctx.beginPath();
+    ctx.moveTo(cx - s * 0.45, cy + s * 0.55);
+    ctx.lineTo(cx + s * 0.4, cy + s * 0.55);
+    ctx.lineTo(cx - s * 0.45, cy - s * 0.3);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    for (let i = 0; i < 4; i++) {
+      const nx = cx - s * 0.5 + i * (s * 0.32);
+      ctx.moveTo(nx, y2);
+      ctx.lineTo(nx, y2 - s * 0.15);
+    }
+    ctx.stroke();
+  }
+
+  function drawInfinityDoodle(cx, cy, r) {
+    const s = r * 0.85;
+    ctx.beginPath();
+    const w = s * 0.85;
+    const h = s * 0.55;
+    ctx.moveTo(cx, cy);
+    ctx.bezierCurveTo(cx - w * 0.6, cy - h, cx - w, cy - h, cx - w, cy);
+    ctx.bezierCurveTo(cx - w, cy + h, cx - w * 0.6, cy + h, cx, cy);
+    ctx.bezierCurveTo(cx + w * 0.6, cy - h, cx + w, cy - h, cx + w, cy);
+    ctx.bezierCurveTo(cx + w, cy + h, cx + w * 0.6, cy + h, cx, cy);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#faf7f0';
+    ctx.beginPath();
+    ctx.ellipse(cx - s * 0.48, cy, s * 0.22, s * 0.18, 0, 0, Math.PI * 2);
+    ctx.ellipse(cx + s * 0.48, cy, s * 0.22, s * 0.18, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  function drawTargetDoodle(cx, cy, r) {
+    const s = r * 0.85;
+    ctx.beginPath();
+    ctx.arc(cx, cy, s * 0.85, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, s * 0.48, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(cx - s * 0.95, cy); ctx.lineTo(cx + s * 0.95, cy);
+    ctx.moveTo(cx, cy - s * 0.95); ctx.lineTo(cx, cy + s * 0.95);
+    ctx.stroke();
+
+    ctx.fillStyle = '#2b2623';
+    ctx.beginPath();
+    ctx.arc(cx, cy, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawCrystalPrismDoodle(cx, cy, r) {
+    const s = r * 0.88;
+    const topY = cy - s * 0.9;
+    const botY = cy + s * 0.9;
+    const yMid1 = cy - s * 0.35;
+    const yMid2 = cy + s * 0.35;
+    const xWide = s * 0.8;
+    const xMid = s * 0.45;
+
+    ctx.beginPath();
+    ctx.moveTo(cx, topY);
+    ctx.lineTo(cx + xMid, yMid1);
+    ctx.lineTo(cx + xWide, yMid2);
+    ctx.lineTo(cx, botY);
+    ctx.lineTo(cx - xWide, yMid2);
+    ctx.lineTo(cx - xMid, yMid1);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(cx, topY); ctx.lineTo(cx, botY);
+    ctx.moveTo(cx - xMid, yMid1); ctx.lineTo(cx + xMid, yMid1);
+    ctx.moveTo(cx - xWide, yMid2); ctx.lineTo(cx + xWide, yMid2);
+    ctx.stroke();
+  }
+
+  // ── Theme 2: Crayon Canyon (Nature & Wilderness) ─────────────────────────────
+  function drawAppleDoodle(cx, cy, r) {
+    const s = r * 0.85;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - s * 0.55);
+    ctx.bezierCurveTo(cx + s * 0.4, cy - s * 0.85, cx + s * 0.95, cy - s * 0.4, cx + s * 0.9, cy + s * 0.3);
+    ctx.bezierCurveTo(cx + s * 0.85, cy + s * 0.85, cx + s * 0.2, cy + s * 0.95, cx, cy + s * 0.75);
+    ctx.bezierCurveTo(cx - s * 0.2, cy + s * 0.95, cx - s * 0.85, cy + s * 0.85, cx - s * 0.9, cy + s * 0.3);
+    ctx.bezierCurveTo(cx - s * 0.95, cy - s * 0.4, cx - s * 0.4, cy - s * 0.85, cx, cy - s * 0.55);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.strokeStyle = '#2b2623';
+    ctx.lineWidth = 2.4;
+    ctx.moveTo(cx, cy - s * 0.55);
+    ctx.quadraticCurveTo(cx + s * 0.15, cy - s * 0.9, cx + s * 0.35, cy - s * 0.88);
+    ctx.stroke();
+
+    ctx.fillStyle = '#4cd97b';
+    ctx.beginPath();
+    ctx.ellipse(cx + s * 0.32, cy - s * 0.75, s * 0.22, s * 0.12, 0.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  function drawSunshineDoodle(cx, cy, r) {
+    const s = r * 0.85;
+    ctx.beginPath();
+    ctx.arc(cx, cy, s * 0.52, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.lineWidth = 2.4;
+    for (let i = 0; i < 8; i++) {
+      const a = (i * Math.PI) / 4;
+      const x1 = cx + Math.cos(a) * (s * 0.65);
+      const y1 = cy + Math.sin(a) * (s * 0.65);
+      const x2 = cx + Math.cos(a) * (s * 0.95);
+      const y2 = cy + Math.sin(a) * (s * 0.95);
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+    }
+    ctx.stroke();
+  }
+
+  function drawLightningDoodle(cx, cy, r) {
+    const s = r * 0.88;
+    ctx.beginPath();
+    ctx.moveTo(cx + s * 0.1, cy - s * 0.95);
+    ctx.lineTo(cx - s * 0.65, cy - s * 0.05);
+    ctx.lineTo(cx - s * 0.05, cy - s * 0.05);
+    ctx.lineTo(cx - s * 0.35, cy + s * 0.95);
+    ctx.lineTo(cx + s * 0.65, cy + s * 0.05);
+    ctx.lineTo(cx + s * 0.05, cy + s * 0.05);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  function drawLeafDoodle(cx, cy, r) {
+    const s = r * 0.88;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - s * 0.95);
+    ctx.bezierCurveTo(cx + s * 0.85, cy - s * 0.3, cx + s * 0.75, cy + s * 0.6, cx, cy + s * 0.95);
+    ctx.bezierCurveTo(cx - s * 0.75, cy + s * 0.6, cx - s * 0.85, cy - s * 0.3, cx, cy - s * 0.95);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - s * 0.75); ctx.lineTo(cx, cy + s * 0.85);
+    ctx.moveTo(cx, cy - s * 0.3); ctx.lineTo(cx + s * 0.4, cy - s * 0.15);
+    ctx.moveTo(cx, cy - s * 0.3); ctx.lineTo(cx - s * 0.4, cy - s * 0.15);
+    ctx.moveTo(cx, cy + s * 0.2); ctx.lineTo(cx + s * 0.35, cy + s * 0.35);
+    ctx.moveTo(cx, cy + s * 0.2); ctx.lineTo(cx - s * 0.35, cy + s * 0.35);
+    ctx.stroke();
+  }
+
+  function drawCloudRainDoodle(cx, cy, r) {
+    const s = r * 0.85;
+    ctx.beginPath();
+    ctx.moveTo(cx - s * 0.8, cy + s * 0.25);
+    ctx.arc(cx - s * 0.45, cy + s * 0.05, s * 0.4, Math.PI * 0.8, Math.PI * 1.8);
+    ctx.arc(cx + s * 0.05, cy - s * 0.25, s * 0.45, Math.PI * 1.0, Math.PI * 2.0);
+    ctx.arc(cx + s * 0.55, cy + s * 0.05, s * 0.35, Math.PI * 1.3, Math.PI * 0.2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.lineWidth = 2.2;
+    ctx.moveTo(cx - s * 0.45, cy + s * 0.45); ctx.lineTo(cx - s * 0.55, cy + s * 0.85);
+    ctx.moveTo(cx, cy + s * 0.45);           ctx.lineTo(cx - s * 0.1, cy + s * 0.85);
+    ctx.moveTo(cx + s * 0.45, cy + s * 0.45); ctx.lineTo(cx + s * 0.35, cy + s * 0.85);
+    ctx.stroke();
+  }
+
+  function drawButterflyDoodle(cx, cy, r) {
+    const s = r * 0.85;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - s * 0.2);
+    ctx.bezierCurveTo(cx - s * 0.9, cy - s * 0.9, cx - s * 1.0, cy - s * 0.1, cx - s * 0.3, cy);
+    ctx.bezierCurveTo(cx - s * 0.85, cy + s * 0.6, cx - s * 0.5, cy + s * 0.9, cx, cy + s * 0.3);
+    ctx.bezierCurveTo(cx + s * 0.5, cy + s * 0.9, cx + s * 0.85, cy + s * 0.6, cx + s * 0.3, cy);
+    ctx.bezierCurveTo(cx + s * 1.0, cy - s * 0.1, cx + s * 0.9, cy - s * 0.9, cx, cy - s * 0.2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#2b2623';
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + s * 0.05, s * 0.1, s * 0.45, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.lineWidth = 1.8;
+    ctx.moveTo(cx, cy - s * 0.35); ctx.quadraticCurveTo(cx - s * 0.25, cy - s * 0.75, cx - s * 0.35, cy - s * 0.8);
+    ctx.moveTo(cx, cy - s * 0.35); ctx.quadraticCurveTo(cx + s * 0.25, cy - s * 0.75, cx + s * 0.35, cy - s * 0.8);
+    ctx.stroke();
+  }
+
+  // ── Theme 3: Chalkboard Caverns (Cosmos & Science) ───────────────────────────
+  function drawFlaskDoodle(cx, cy, r) {
+    const s = r * 0.88;
+    ctx.beginPath();
+    ctx.moveTo(cx - s * 0.25, cy - s * 0.85);
+    ctx.lineTo(cx + s * 0.25, cy - s * 0.85);
+    ctx.lineTo(cx + s * 0.25, cy - s * 0.3);
+    ctx.lineTo(cx + s * 0.85, cy + s * 0.75);
+    ctx.quadraticCurveTo(cx, cy + s * 0.95, cx - s * 0.85, cy + s * 0.75);
+    ctx.lineTo(cx - s * 0.25, cy - s * 0.3);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(cx - s * 0.35, cy - s * 0.85);
+    ctx.lineTo(cx + s * 0.35, cy - s * 0.85);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(cx - s * 0.55, cy + s * 0.25);
+    ctx.quadraticCurveTo(cx, cy + s * 0.35, cx + s * 0.55, cy + s * 0.25);
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(cx - s * 0.2, cy + s * 0.55, 2.5, 0, Math.PI * 2);
+    ctx.arc(cx + s * 0.25, cy + s * 0.45, 3.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawSaturnDoodle(cx, cy, r) {
+    const s = r * 0.85;
+    ctx.beginPath();
+    ctx.arc(cx, cy, s * 0.55, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(-0.35);
+    ctx.beginPath();
+    ctx.ellipse(0, 0, s * 1.05, s * 0.32, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawLightbulbDoodle(cx, cy, r) {
+    const s = r * 0.85;
+    ctx.beginPath();
+    ctx.moveTo(cx - s * 0.35, cy + s * 0.4);
+    ctx.bezierCurveTo(cx - s * 0.85, cy + s * 0.1, cx - s * 0.85, cy - s * 0.8, cx, cy - s * 0.8);
+    ctx.bezierCurveTo(cx + s * 0.85, cy - s * 0.8, cx + s * 0.85, cy + s * 0.1, cx + s * 0.35, cy + s * 0.4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.rect(cx - s * 0.25, cy + s * 0.4, s * 0.5, s * 0.35);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(cx - s * 0.2, cy + s * 0.15);
+    ctx.lineTo(cx - s * 0.15, cy - s * 0.25);
+    ctx.lineTo(cx + s * 0.15, cy - s * 0.25);
+    ctx.lineTo(cx + s * 0.2, cy + s * 0.15);
+    ctx.stroke();
+  }
+
+  function drawAtomDoodle(cx, cy, r) {
+    const s = r * 0.88;
+    ctx.beginPath();
+    ctx.arc(cx, cy, s * 0.38, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, s * 0.9, s * 0.32, 0.5, 0, Math.PI * 2);
+    ctx.ellipse(cx, cy, s * 0.9, s * 0.32, -0.5, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.fillStyle = '#2b2623';
+    ctx.beginPath();
+    ctx.arc(cx + s * 0.7, cy - s * 0.35, 2.5, 0, Math.PI * 2);
+    ctx.arc(cx - s * 0.65, cy - s * 0.4, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawCrescentMoonDoodle(cx, cy, r) {
+    const s = r * 0.88;
+    ctx.beginPath();
+    ctx.arc(cx, cy, s * 0.8, -Math.PI * 0.45, Math.PI * 0.75, false);
+    ctx.arc(cx + s * 0.42, cy - s * 0.18, s * 0.65, Math.PI * 0.72, -Math.PI * 0.42, true);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(43, 38, 35, 0.35)';
+    ctx.beginPath();
+    ctx.arc(cx - s * 0.3, cy - s * 0.15, 2.5, 0, Math.PI * 2);
+    ctx.arc(cx - s * 0.22, cy + s * 0.3, 3.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawRocketDoodle(cx, cy, r) {
+    const s = r * 0.88;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - s * 0.95);
+    ctx.quadraticCurveTo(cx + s * 0.5, cy - s * 0.3, cx + s * 0.45, cy + s * 0.55);
+    ctx.lineTo(cx - s * 0.45, cy + s * 0.55);
+    ctx.quadraticCurveTo(cx - s * 0.5, cy - s * 0.3, cx, cy - s * 0.95);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(cx - s * 0.45, cy + s * 0.2); ctx.lineTo(cx - s * 0.85, cy + s * 0.7); ctx.lineTo(cx - s * 0.45, cy + s * 0.55);
+    ctx.moveTo(cx + s * 0.45, cy + s * 0.2); ctx.lineTo(cx + s * 0.85, cy + s * 0.7); ctx.lineTo(cx + s * 0.45, cy + s * 0.55);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#faf7f0';
+    ctx.beginPath();
+    ctx.arc(cx, cy - s * 0.15, s * 0.22, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  // ── Theme 4: Origami Oasis (Folded Paper) ───────────────────────────────────
+  function drawOrigamiCraneDoodle(cx, cy, r) {
+    const s = r * 0.88;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - s * 0.35);
+    ctx.lineTo(cx + s * 0.95, cy - s * 0.75);
+    ctx.lineTo(cx + s * 0.35, cy + s * 0.35);
+    ctx.lineTo(cx + s * 0.75, cy + s * 0.8);
+    ctx.lineTo(cx, cy + s * 0.5);
+    ctx.lineTo(cx - s * 0.75, cy + s * 0.35);
+    ctx.lineTo(cx - s * 0.9, cy - s * 0.1);
+    ctx.lineTo(cx - s * 0.65, cy - s * 0.15);
+    ctx.lineTo(cx - s * 0.2, cy + s * 0.1);
+    ctx.lineTo(cx - s * 0.4, cy - s * 0.75);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - s * 0.35); ctx.lineTo(cx, cy + s * 0.5);
+    ctx.moveTo(cx, cy - s * 0.35); ctx.lineTo(cx + s * 0.35, cy + s * 0.35);
+    ctx.stroke();
+  }
+
+  function drawOrigamiBoatDoodle(cx, cy, r) {
+    const s = r * 0.88;
+    ctx.beginPath();
+    ctx.moveTo(cx - s * 0.9, cy + s * 0.2);
+    ctx.lineTo(cx + s * 0.9, cy + s * 0.2);
+    ctx.lineTo(cx + s * 0.6, cy + s * 0.75);
+    ctx.lineTo(cx - s * 0.6, cy + s * 0.75);
+    ctx.closePath();
+    ctx.moveTo(cx, cy - s * 0.85);
+    ctx.lineTo(cx + s * 0.55, cy + s * 0.2);
+    ctx.lineTo(cx - s * 0.55, cy + s * 0.2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - s * 0.85); ctx.lineTo(cx, cy + s * 0.75);
+    ctx.stroke();
+  }
+
+  function drawOrigamiShurikenDoodle(cx, cy, r) {
+    const s = r * 0.88;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - s * 0.95);
+    ctx.lineTo(cx + s * 0.3, cy - s * 0.3);
+    ctx.lineTo(cx + s * 0.95, cy);
+    ctx.lineTo(cx + s * 0.3, cy + s * 0.3);
+    ctx.lineTo(cx, cy + s * 0.95);
+    ctx.lineTo(cx - s * 0.3, cy + s * 0.3);
+    ctx.lineTo(cx - s * 0.95, cy);
+    ctx.lineTo(cx - s * 0.3, cy - s * 0.3);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - s * 0.95); ctx.lineTo(cx, cy + s * 0.95);
+    ctx.moveTo(cx - s * 0.95, cy); ctx.lineTo(cx + s * 0.95, cy);
+    ctx.stroke();
+  }
+
+  function drawOrigamiLotusDoodle(cx, cy, r) {
+    const s = r * 0.88;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy + s * 0.6);
+    ctx.lineTo(cx - s * 0.85, cy);
+    ctx.lineTo(cx - s * 0.45, cy - s * 0.5);
+    ctx.lineTo(cx, cy);
+    ctx.lineTo(cx, cy - s * 0.9);
+    ctx.lineTo(cx + s * 0.35, cy - s * 0.3);
+    ctx.lineTo(cx + s * 0.85, cy);
+    ctx.lineTo(cx, cy + s * 0.6);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - s * 0.9); ctx.lineTo(cx, cy + s * 0.6);
+    ctx.stroke();
+  }
+
+  function drawOrigamiPlaneDoodle(cx, cy, r) {
+    const s = r * 0.88;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - s * 0.95);
+    ctx.lineTo(cx + s * 0.85, cy + s * 0.7);
+    ctx.lineTo(cx + s * 0.25, cy + s * 0.5);
+    ctx.lineTo(cx, cy + s * 0.85);
+    ctx.lineTo(cx - s * 0.25, cy + s * 0.5);
+    ctx.lineTo(cx - s * 0.85, cy + s * 0.7);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - s * 0.95); ctx.lineTo(cx, cy + s * 0.85);
+    ctx.stroke();
+  }
+
+  function drawOrigamiFoxDoodle(cx, cy, r) {
+    const s = r * 0.88;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy + s * 0.85);
+    ctx.lineTo(cx + s * 0.85, cy - s * 0.05);
+    ctx.lineTo(cx + s * 0.65, cy - s * 0.9);
+    ctx.lineTo(cx, cy - s * 0.3);
+    ctx.lineTo(cx - s * 0.65, cy - s * 0.9);
+    ctx.lineTo(cx - s * 0.85, cy - s * 0.05);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#2b2623';
+    ctx.beginPath();
+    ctx.arc(cx - s * 0.3, cy + s * 0.15, 2.5, 0, Math.PI * 2);
+    ctx.arc(cx + s * 0.3, cy + s * 0.15, 2.5, 0, Math.PI * 2);
+    ctx.arc(cx, cy + s * 0.65, 3.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // ── Theme 5: Watercolor Waves (Marine & Aquatic) ─────────────────────────────
+  function drawSeashellDoodle(cx, cy, r) {
+    const s = r * 0.88;
+    ctx.beginPath();
+    ctx.moveTo(cx - s * 0.35, cy + s * 0.8);
+    ctx.lineTo(cx - s * 0.85, cy + s * 0.1);
+    ctx.bezierCurveTo(cx - s * 0.8, cy - s * 0.8, cx + s * 0.8, cy - s * 0.8, cx + s * 0.85, cy + s * 0.1);
+    ctx.lineTo(cx + s * 0.35, cy + s * 0.8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(cx, cy + s * 0.8); ctx.lineTo(cx, cy - s * 0.7);
+    ctx.moveTo(cx, cy + s * 0.8); ctx.lineTo(cx - s * 0.45, cy - s * 0.55);
+    ctx.moveTo(cx, cy + s * 0.8); ctx.lineTo(cx + s * 0.45, cy - s * 0.55);
+    ctx.stroke();
+  }
+
+  function drawStarfishDoodle(cx, cy, r) {
+    const s = r * 0.9;
+    ctx.beginPath();
+    for (let i = 0; i < 10; i++) {
+      const rad = (i % 2 === 0) ? s * 0.92 : s * 0.42;
+      const a = (i * Math.PI) / 5 - Math.PI / 2;
+      const px = cx + Math.cos(a) * rad;
+      const py = cy + Math.sin(a) * rad;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#2b2623';
+    ctx.beginPath();
+    ctx.arc(cx, cy, 2.5, 0, Math.PI * 2);
+    ctx.arc(cx, cy - s * 0.45, 2.0, 0, Math.PI * 2);
+    ctx.arc(cx + s * 0.4, cy - s * 0.15, 2.0, 0, Math.PI * 2);
+    ctx.arc(cx - s * 0.4, cy - s * 0.15, 2.0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawFishDoodle(cx, cy, r) {
+    const s = r * 0.88;
+    ctx.beginPath();
+    ctx.moveTo(cx + s * 0.7, cy);
+    ctx.quadraticCurveTo(cx, cy - s * 0.7, cx - s * 0.45, cy);
+    ctx.lineTo(cx - s * 0.9, cy - s * 0.55);
+    ctx.lineTo(cx - s * 0.9, cy + s * 0.55);
+    ctx.lineTo(cx - s * 0.45, cy);
+    ctx.quadraticCurveTo(cx, cy + s * 0.7, cx + s * 0.7, cy);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#2b2623';
+    ctx.beginPath();
+    ctx.arc(cx + s * 0.35, cy - s * 0.15, 2.8, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(cx + s * 0.15, cy, s * 0.35, -Math.PI * 0.35, Math.PI * 0.35);
+    ctx.stroke();
+  }
+
+  function drawOceanWaveDoodle(cx, cy, r) {
+    const s = r * 0.88;
+    ctx.beginPath();
+    ctx.moveTo(cx - s * 0.85, cy + s * 0.7);
+    ctx.quadraticCurveTo(cx - s * 0.4, cy + s * 0.7, cx, cy + s * 0.2);
+    ctx.bezierCurveTo(cx + s * 0.3, cy - s * 0.3, cx + s * 0.85, cy - s * 0.85, cx + s * 0.85, cy - s * 0.2);
+    ctx.bezierCurveTo(cx + s * 0.85, cy + s * 0.3, cx + s * 0.4, cy - s * 0.1, cx + s * 0.35, cy - s * 0.4);
+    ctx.quadraticCurveTo(cx + s * 0.1, cy + s * 0.5, cx - s * 0.85, cy + s * 0.7);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(cx + s * 0.4, cy - s * 0.5, 3.0, 0, Math.PI * 2);
+    ctx.arc(cx + s * 0.65, cy - s * 0.65, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawJellyfishDoodle(cx, cy, r) {
+    const s = r * 0.88;
+    ctx.beginPath();
+    ctx.moveTo(cx - s * 0.75, cy + s * 0.15);
+    ctx.bezierCurveTo(cx - s * 0.8, cy - s * 0.85, cx + s * 0.8, cy - s * 0.85, cx + s * 0.75, cy + s * 0.15);
+    ctx.quadraticCurveTo(cx, cy + s * 0.3, cx - s * 0.75, cy + s * 0.15);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.lineWidth = 2.0;
+    ctx.moveTo(cx - s * 0.4, cy + s * 0.2);
+    ctx.quadraticCurveTo(cx - s * 0.6, cy + s * 0.55, cx - s * 0.4, cy + s * 0.85);
+    ctx.moveTo(cx, cy + s * 0.25);
+    ctx.quadraticCurveTo(cx + s * 0.15, cy + s * 0.55, cx, cy + s * 0.9);
+    ctx.moveTo(cx + s * 0.4, cy + s * 0.2);
+    ctx.quadraticCurveTo(cx + s * 0.6, cy + s * 0.55, cx + s * 0.4, cy + s * 0.85);
+    ctx.stroke();
+  }
+
+  function drawSeahorseDoodle(cx, cy, r) {
+    const s = r * 0.88;
+    ctx.beginPath();
+    ctx.moveTo(cx - s * 0.1, cy - s * 0.85);
+    ctx.lineTo(cx + s * 0.5, cy - s * 0.65);
+    ctx.lineTo(cx + s * 0.15, cy - s * 0.45);
+    ctx.quadraticCurveTo(cx + s * 0.6, cy - s * 0.1, cx + s * 0.35, cy + s * 0.35);
+    ctx.quadraticCurveTo(cx + s * 0.1, cy + s * 0.85, cx - s * 0.35, cy + s * 0.75);
+    ctx.quadraticCurveTo(cx - s * 0.15, cy + s * 0.45, cx - s * 0.15, cy + s * 0.2);
+    ctx.quadraticCurveTo(cx - s * 0.55, cy - s * 0.3, cx - s * 0.1, cy - s * 0.85);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#2b2623';
+    ctx.beginPath();
+    ctx.arc(cx + s * 0.05, cy - s * 0.55, 2.4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // ── Theme 6: Inkwell Valley (Vintage Calligraphy) ────────────────────────────
+  function drawWaxSealDoodle(cx, cy, r) {
+    const s = r * 0.85;
+    ctx.beginPath();
+    for (let i = 0; i < 12; i++) {
+      const a = (i * Math.PI) / 6;
+      const rad = (i % 2 === 0) ? s * 0.75 : s * 0.62;
+      const px = cx + Math.cos(a) * rad;
+      const py = cy - s * 0.15 + Math.sin(a) * rad;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(cx, cy - s * 0.15, s * 0.38, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(cx - s * 0.2, cy + s * 0.45); ctx.lineTo(cx - s * 0.4, cy + s * 0.9); ctx.lineTo(cx - s * 0.1, cy + s * 0.8);
+    ctx.moveTo(cx + s * 0.2, cy + s * 0.45); ctx.lineTo(cx + s * 0.4, cy + s * 0.9); ctx.lineTo(cx + s * 0.1, cy + s * 0.8);
+    ctx.stroke();
+  }
+
+  function drawQuillPenDoodle(cx, cy, r) {
+    const s = r * 0.9;
+    ctx.beginPath();
+    ctx.moveTo(cx - s * 0.65, cy + s * 0.8);
+    ctx.lineTo(cx - s * 0.35, cy + s * 0.45);
+    ctx.bezierCurveTo(cx - s * 0.2, cy, cx + s * 0.25, cy - s * 0.85, cx + s * 0.7, cy - s * 0.9);
+    ctx.bezierCurveTo(cx + s * 0.85, cy - s * 0.4, cx + s * 0.2, cy + s * 0.3, cx - s * 0.35, cy + s * 0.55);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(cx - s * 0.65, cy + s * 0.8);
+    ctx.lineTo(cx + s * 0.6, cy - s * 0.8);
+    ctx.stroke();
+  }
+
+  function drawSkeletonKeyDoodle(cx, cy, r) {
+    const s = r * 0.88;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy - s * 0.52, s * 0.48, s * 0.35, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#faf7f0';
+    ctx.beginPath();
+    ctx.ellipse(cx, cy - s * 0.52, s * 0.24, s * 0.16, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - s * 0.15);
+    ctx.lineTo(cx, cy + s * 0.85);
+    ctx.lineTo(cx + s * 0.45, cy + s * 0.85);
+    ctx.lineTo(cx + s * 0.45, cy + s * 0.6);
+    ctx.lineTo(cx + s * 0.2, cy + s * 0.6);
+    ctx.lineTo(cx + s * 0.2, cy + s * 0.45);
+    ctx.lineTo(cx + s * 0.45, cy + s * 0.45);
+    ctx.lineTo(cx + s * 0.45, cy + s * 0.3);
+    ctx.lineTo(cx, cy + s * 0.3);
+    ctx.stroke();
+  }
+
+  function drawTrebleClefDoodle(cx, cy, r) {
+    const s = r * 0.9;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy + s * 0.85);
+    ctx.bezierCurveTo(cx - s * 0.25, cy + s * 0.85, cx - s * 0.25, cy + s * 0.65, cx, cy + s * 0.65);
+    ctx.lineTo(cx, cy - s * 0.55);
+    ctx.bezierCurveTo(cx, cy - s * 0.9, cx + s * 0.4, cy - s * 0.9, cx + s * 0.25, cy - s * 0.45);
+    ctx.bezierCurveTo(cx - s * 0.55, cy - s * 0.2, cx - s * 0.55, cy + s * 0.4, cx, cy + s * 0.4);
+    ctx.bezierCurveTo(cx + s * 0.45, cy + s * 0.4, cx + s * 0.45, cy + s * 0.1, cx + s * 0.1, cy + s * 0.05);
+    ctx.stroke();
+
+    ctx.fillStyle = '#2b2623';
+    ctx.beginPath();
+    ctx.arc(cx - s * 0.15, cy + s * 0.78, 3.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawInkDropDoodle(cx, cy, r) {
+    const s = r * 0.88;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - s * 0.9);
+    ctx.bezierCurveTo(cx + s * 0.75, cy - s * 0.05, cx + s * 0.75, cy + s * 0.75, cx, cy + s * 0.9);
+    ctx.bezierCurveTo(cx - s * 0.75, cy + s * 0.75, cx - s * 0.75, cy - s * 0.05, cx, cy - s * 0.9);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#2b2623';
+    ctx.beginPath();
+    ctx.arc(cx + s * 0.65, cy - s * 0.55, 2.5, 0, Math.PI * 2);
+    ctx.arc(cx - s * 0.55, cy + s * 0.75, 2.0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawCrownDoodle(cx, cy, r) {
+    const s = r * 0.85;
+    ctx.beginPath();
+    ctx.moveTo(cx - s * 0.85, cy + s * 0.65);
+    ctx.lineTo(cx + s * 0.85, cy + s * 0.65);
+    ctx.lineTo(cx + s * 0.75, cy - s * 0.35);
+    ctx.lineTo(cx + s * 0.35, cy + s * 0.05);
+    ctx.lineTo(cx, cy - s * 0.75);
+    ctx.lineTo(cx - s * 0.35, cy + s * 0.05);
+    ctx.lineTo(cx - s * 0.75, cy - s * 0.35);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(cx - s * 0.75, cy - s * 0.38, 2.8, 0, Math.PI * 2);
+    ctx.arc(cx, cy - s * 0.78, 3.2, 0, Math.PI * 2);
+    ctx.arc(cx + s * 0.75, cy - s * 0.38, 2.8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  // ── Theme 7: Pastel Peaks (Sweet Bakery Treats) ──────────────────────────────
+  function drawCupcakeDoodle(cx, cy, r) {
+    const s = r * 0.88;
+    ctx.beginPath();
+    ctx.moveTo(cx - s * 0.65, cy + s * 0.1);
+    ctx.lineTo(cx + s * 0.65, cy + s * 0.1);
+    ctx.lineTo(cx + s * 0.45, cy + s * 0.85);
+    ctx.lineTo(cx - s * 0.45, cy + s * 0.85);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(cx - s * 0.3, cy - s * 0.05, s * 0.35, Math.PI * 0.8, Math.PI * 1.8);
+    ctx.arc(cx, cy - s * 0.35, s * 0.38, Math.PI * 1.0, Math.PI * 2.0);
+    ctx.arc(cx + s * 0.3, cy - s * 0.05, s * 0.35, Math.PI * 1.2, Math.PI * 0.2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#ff5e7e';
+    ctx.beginPath();
+    ctx.arc(cx, cy - s * 0.68, s * 0.18, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  function drawDonutDoodle(cx, cy, r) {
+    const s = r * 0.85;
+    ctx.beginPath();
+    ctx.arc(cx, cy, s * 0.85, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#faf7f0';
+    ctx.beginPath();
+    ctx.arc(cx, cy, s * 0.32, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.strokeStyle = '#2b2623';
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.moveTo(cx - s * 0.5, cy - s * 0.3); ctx.lineTo(cx - s * 0.35, cy - s * 0.45);
+    ctx.moveTo(cx + s * 0.3, cy - s * 0.45); ctx.lineTo(cx + s * 0.45, cy - s * 0.3);
+    ctx.moveTo(cx - s * 0.45, cy + s * 0.4); ctx.lineTo(cx - s * 0.3, cy + s * 0.45);
+    ctx.moveTo(cx + s * 0.35, cy + s * 0.4); ctx.lineTo(cx + s * 0.5, cy + s * 0.35);
+    ctx.stroke();
+  }
+
+  function drawCroissantDoodle(cx, cy, r) {
+    const s = r * 0.88;
+    ctx.beginPath();
+    ctx.moveTo(cx - s * 0.85, cy + s * 0.45);
+    ctx.bezierCurveTo(cx - s * 0.7, cy - s * 0.75, cx + s * 0.7, cy - s * 0.75, cx + s * 0.85, cy + s * 0.45);
+    ctx.quadraticCurveTo(cx + s * 0.35, cy + s * 0.1, cx, cy + s * 0.25);
+    ctx.quadraticCurveTo(cx - s * 0.35, cy + s * 0.1, cx - s * 0.85, cy + s * 0.45);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(cx - s * 0.3, cy - s * 0.45); ctx.lineTo(cx - s * 0.2, cy + s * 0.15);
+    ctx.moveTo(cx, cy - s * 0.6);            ctx.lineTo(cx, cy + s * 0.25);
+    ctx.moveTo(cx + s * 0.3, cy - s * 0.45); ctx.lineTo(cx + s * 0.2, cy + s * 0.15);
+    ctx.stroke();
+  }
+
+  function drawLollipopDoodle(cx, cy, r) {
+    const s = r * 0.88;
+    ctx.beginPath();
+    ctx.arc(cx, cy - s * 0.2, s * 0.65, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    for (let a = 0; a < Math.PI * 3.2; a += 0.18) {
+      const rad = (a / (Math.PI * 3.2)) * (s * 0.5);
+      const px = cx + Math.cos(a) * rad;
+      const py = cy - s * 0.2 + Math.sin(a) * rad;
+      if (a === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.lineWidth = 2.4;
+    ctx.moveTo(cx, cy + s * 0.45); ctx.lineTo(cx, cy + s * 0.95);
+    ctx.stroke();
+  }
+
+  function drawIceCreamDoodle(cx, cy, r) {
+    const s = r * 0.88;
+    ctx.beginPath();
+    ctx.moveTo(cx - s * 0.55, cy);
+    ctx.lineTo(cx + s * 0.55, cy);
+    ctx.lineTo(cx, cy + s * 0.95);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(cx - s * 0.25, cy); ctx.lineTo(cx + s * 0.15, cy + s * 0.65);
+    ctx.moveTo(cx + s * 0.25, cy); ctx.lineTo(cx - s * 0.15, cy + s * 0.65);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(cx, cy - s * 0.28, s * 0.55, Math.PI * 0.95, Math.PI * 0.05);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  function drawBonbonDoodle(cx, cy, r) {
+    const s = r * 0.85;
+    ctx.beginPath();
+    ctx.arc(cx, cy, s * 0.55, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(cx - s * 0.5, cy);
+    ctx.lineTo(cx - s * 0.95, cy - s * 0.45);
+    ctx.lineTo(cx - s * 0.95, cy + s * 0.45);
+    ctx.closePath();
+    ctx.moveTo(cx + s * 0.5, cy);
+    ctx.lineTo(cx + s * 0.95, cy - s * 0.45);
+    ctx.lineTo(cx + s * 0.95, cy + s * 0.45);
+    ctx.closePath();
+    ctx.fill();
     ctx.stroke();
   }
 
@@ -977,5 +2038,7 @@ const Renderer = (() => {
     spawnConfetti,
     setHint,
     clearHint,
+    setWorld,
+    getWorld,
   };
 })();
