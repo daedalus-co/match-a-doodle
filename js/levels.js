@@ -1,0 +1,412 @@
+/**
+ * Doodle Premium — Level Definitions & Procedural Generator
+ * Produces 500 beautifully paced, mathematically balanced levels
+ * structured into Episodes / Worlds of 20 levels each.
+ *
+ * Scoring & Star Formula:
+ *  - 1 Star (Easy pass): reached target score / base objectives
+ *  - 2 Stars (Dopamine target): achievable with a few good combos (1.4x base)
+ *  - 3 Stars (Challenge goal): requires special powerup combos & cascades (2.0x base)
+ *  - Early levels (1-10) use 4-5 tile types and attainable thresholds so 3 stars can be earned with combos.
+ */
+
+'use strict';
+
+const J1 = 1;  // single jelly / ink patch
+const J2 = 2;  // double jelly / dense ink
+const F1 = 3;  // sketch tape / frosting 1
+const F2 = 4;  // double tape / frosting 2
+const _  = 0;  // clean cell
+
+const CH = 7;  // cherry / doodle acorn
+const HZ = 8;  // hazelnut / ink drop
+
+const WORLD_NAMES = [
+  'Sketchy Hills',
+  'Graph Paper Grove',
+  'Crayon Canyon',
+  'Chalkboard Caverns',
+  'Origami Oasis',
+  'Watercolor Waves',
+  'Inkwell Valley',
+  'Pastel Peaks',
+  'Blueprint Basin',
+  'Doodle Dunes',
+  'Sticker Shore',
+  'Charcoal Cliffs',
+  'Highlighter Heights',
+  'Mosaic Meadow',
+  'Pencil Point Plateau',
+  'Fountain Pen Falls',
+  'Acrylic Archway',
+  'Calligraphy Cove',
+  'Canvas Crest',
+  'Stencil Savannah',
+  'Prism Pass',
+  'Palette Plains',
+  'Etching Enclave',
+  'Gouache Gorge',
+  'Masterpiece Mountain'
+];
+
+function mulberry32(a) {
+  return function() {
+    let t = a += 0x6D2D679F;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+function generateJellyMap(rng, density, doubleRate) {
+  const map = [];
+  for (let r = 0; r < 8; r++) {
+    const row = [];
+    for (let c = 0; c < 8; c++) {
+      const isCorner = (r === 0 || r === 7) && (c === 0 || c === 7);
+      if (isCorner && rng() > 0.3) {
+        row.push(_);
+        continue;
+      }
+      if (rng() < density) {
+        row.push(rng() < doubleRate ? J2 : J1);
+      } else {
+        row.push(_);
+      }
+    }
+    map.push(row);
+  }
+  let count = 0;
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      if (map[r][c] > 0) count++;
+    }
+  }
+  if (count < 6) {
+    for (let r = 2; r <= 5; r++) {
+      for (let c = 2; c <= 5; c++) {
+        map[r][c] = J1;
+      }
+    }
+  }
+  return map;
+}
+
+function generateLevels(total = 500) {
+  const list = [];
+
+  // Seeded curated foundational levels 1 to 10
+  // Reduced candy pool (4-5 colors) makes apparent combos and 3 stars easily reachable!
+  const curated = [
+    {
+      id: 1,
+      title: 'First Sketch',
+      subtitle: 'Match 3 sweet doodles to score 1,200 points!',
+      worldName: WORLD_NAMES[0],
+      worldIndex: 1,
+      objective: 'score',
+      moves: 25,
+      candyPool: [1, 2, 3, 4], // 4 colors: lots of natural 4-in-a-row & T/L combos!
+      targetScore: 1200,
+      stars: [1200, 1800, 2600], // 3 stars easily doable with powerups
+      jellyMap: null,
+      orders: null,
+      ingredientCount: 0,
+    },
+    {
+      id: 2,
+      title: 'Ink Splat',
+      subtitle: 'Clear all sketch ink patches with combos!',
+      worldName: WORLD_NAMES[0],
+      worldIndex: 1,
+      objective: 'jelly',
+      moves: 26,
+      candyPool: [1, 2, 3, 4],
+      targetScore: 0,
+      stars: [1400, 2100, 3000],
+      jellyMap: [
+        [J1,J1, _,J1,J1, _,J1,J1],
+        [J1, _,J1, _,J1,J1, _,J1],
+        [ _,J1,J1,J1, _,J1,J1, _],
+        [J1,J1, _,J1,J1, _,J1,J1],
+        [J1, _,J1,J1, _,J1, _,J1],
+        [ _,J1,J1, _,J1,J1,J1, _],
+        [J1, _,J1,J1,J1, _,J1,J1],
+        [J1,J1, _,J1, _,J1, _,J1],
+      ],
+      orders: null,
+      ingredientCount: 0,
+    },
+    {
+      id: 3,
+      title: 'Color Palette',
+      subtitle: 'Collect 15 Red Hearts and 15 Yellow Stars!',
+      worldName: WORLD_NAMES[0],
+      worldIndex: 1,
+      objective: 'order',
+      moves: 28,
+      candyPool: [1, 2, 3, 4, 5],
+      targetScore: 0,
+      stars: [1600, 2400, 3500],
+      jellyMap: null,
+      orders: { 1: 15, 3: 15 },
+      ingredientCount: 0,
+    },
+    {
+      id: 4,
+      title: 'Frosting Tape',
+      subtitle: 'Break through the sketch tape with line blasts!',
+      worldName: WORLD_NAMES[0],
+      worldIndex: 1,
+      objective: 'jelly',
+      moves: 30,
+      candyPool: [1, 2, 3, 4, 5],
+      targetScore: 0,
+      stars: [1800, 2700, 3900],
+      jellyMap: [
+        [F2,F2,F2,F2,F2,F2,F2,F2],
+        [F2,F1,F1,F1,F1,F1,F1,F2],
+        [F2,F1, _,J1,J1, _,F1,F2],
+        [F2,F1,J1,J2,J2,J1,F1,F2],
+        [F2,F1,J1,J2,J2,J1,F1,F2],
+        [F2,F1, _,J1,J1, _,F1,F2],
+        [F2,F1,F1,F1,F1,F1,F1,F2],
+        [F2,F2,F2,F2,F2,F2,F2,F2],
+      ],
+      orders: null,
+      ingredientCount: 0,
+    },
+    {
+      id: 5,
+      title: 'Golden Acorns',
+      subtitle: 'Bring down 3 acorns to the bottom row!',
+      worldName: WORLD_NAMES[0],
+      worldIndex: 1,
+      objective: 'ingredient',
+      moves: 30,
+      candyPool: [1, 2, 3, 4, 5],
+      targetScore: 1800,
+      stars: [1800, 2700, 4000],
+      jellyMap: null,
+      orders: null,
+      ingredientCount: 3,
+      ingredientTypes: [CH],
+    },
+    {
+      id: 6,
+      title: 'Doodle Medley',
+      subtitle: 'Reach 2,500 points AND clear all sketch patches!',
+      worldName: WORLD_NAMES[0],
+      worldIndex: 1,
+      objective: 'mixed',
+      moves: 32,
+      candyPool: [1, 2, 3, 4, 5],
+      targetScore: 2500,
+      stars: [2500, 3800, 5500],
+      jellyMap: [
+        [ _,J1,J1, _,J1,J1, _,J1],
+        [J1,J2, _,J1,J1, _,J2,J1],
+        [J1, _,J2,J1,J1,J2, _,J1],
+        [ _,J1,J1,J2,J2,J1,J1, _],
+        [ _,J1,J1,J2,J2,J1,J1, _],
+        [J1, _,J2,J1,J1,J2, _,J1],
+        [J1,J2, _,J1,J1, _,J2,J1],
+        [ _,J1,J1, _,J1,J1, _,J1],
+      ],
+      orders: null,
+      ingredientCount: 0,
+    },
+    {
+      id: 7,
+      title: 'Ink Drops',
+      subtitle: 'Guide 4 ink drops down and collect 12 Orange doodles!',
+      worldName: WORLD_NAMES[0],
+      worldIndex: 1,
+      objective: 'ingredient',
+      moves: 32,
+      candyPool: [1, 2, 3, 4, 5],
+      targetScore: 2400,
+      stars: [2400, 3600, 5200],
+      jellyMap: null,
+      orders: { 2: 12 },
+      ingredientCount: 4,
+      ingredientTypes: [CH, HZ],
+    },
+    {
+      id: 8,
+      title: 'Pencil Maze',
+      subtitle: 'Clear all tape and ink across the drawing pad!',
+      worldName: WORLD_NAMES[0],
+      worldIndex: 1,
+      objective: 'jelly',
+      moves: 30,
+      candyPool: [1, 2, 3, 4, 5],
+      targetScore: 0,
+      stars: [2500, 3800, 5400],
+      jellyMap: [
+        [F2,F2, _,F2,F2, _,F2,F2],
+        [F2,J2,J1,J2,J2,J1,J2,F2],
+        [ _,J1,J2,J1,J1,J2,J1, _],
+        [F2,J2,J1,J2,J2,J1,J2,F2],
+        [F2,J2,J1,J2,J2,J1,J2,F2],
+        [ _,J1,J2,J1,J1,J2,J1, _],
+        [F2,J2,J1,J2,J2,J1,J2,F2],
+        [F2,F2, _,F2,F2, _,F2,F2],
+      ],
+      orders: null,
+      ingredientCount: 0,
+    },
+    {
+      id: 9,
+      title: 'Rainbow Swirl',
+      subtitle: 'Collect 10 each of Red, Orange, Yellow & Green doodles!',
+      worldName: WORLD_NAMES[0],
+      worldIndex: 1,
+      objective: 'order',
+      moves: 35,
+      candyPool: [1, 2, 3, 4, 5],
+      targetScore: 0,
+      stars: [2600, 4000, 5800],
+      jellyMap: null,
+      orders: { 1: 10, 2: 10, 3: 10, 4: 10 },
+      ingredientCount: 0,
+    },
+    {
+      id: 10,
+      title: 'Grand Sketchbook',
+      subtitle: 'Reach 4,000 points, clear the ink, and guide 3 drops!',
+      worldName: WORLD_NAMES[0],
+      worldIndex: 1,
+      objective: 'mixed',
+      moves: 40,
+      candyPool: [1, 2, 3, 4, 5, 6],
+      targetScore: 4000,
+      stars: [4000, 6000, 8800],
+      jellyMap: [
+        [J2,J2,J1,J2,J2,J1,J2,J2],
+        [J2,F2,F1,F2,F2,F1,F2,J2],
+        [J1,F1,J2,J2,J2,J2,F1,J1],
+        [J2,F2,J2,F2,F2,J2,F2,J2],
+        [J2,F2,J2,F2,F2,J2,F2,J2],
+        [J1,F1,J2,J2,J2,J2,F1,J1],
+        [J2,F2,F1,F2,F2,F1,F2,J2],
+        [J2,J2,J1,J2,J2,J1,J2,J2],
+      ],
+      orders: { 5: 8 },
+      ingredientCount: 3,
+      ingredientTypes: [CH, HZ],
+    }
+  ];
+
+  curated.forEach(lvl => list.push(lvl));
+
+  // Procedurally generate levels 11 to 500
+  for (let id = 11; id <= total; id++) {
+    const rng = mulberry32(id * 997 + 1013);
+    const worldIndex = Math.floor((id - 1) / 20);
+    const worldName = WORLD_NAMES[Math.min(worldIndex, WORLD_NAMES.length - 1)];
+    const posInEpisode = (id - 1) % 20;
+
+    const epProgression = Math.min(1, worldIndex / 24);
+
+    let posFactor = 0.5;
+    if (posInEpisode < 4) posFactor = 0.25;
+    else if (posInEpisode < 12) posFactor = 0.55;
+    else if (posInEpisode < 16) posFactor = 0.90;
+    else if (posInEpisode < 19) posFactor = 0.65;
+    else posFactor = 0.95;
+
+    const overallDifficulty = Math.min(1, epProgression * 0.6 + posFactor * 0.4);
+
+    // Dynamic candy pool: 5 colors early and on warmup levels, 6 colors on harder challenges
+    const candyPool = (posInEpisode < 4 || (id < 50 && rng() < 0.5)) ? [1, 2, 3, 4, 5] : [1, 2, 3, 4, 5, 6];
+
+    const objTypes = ['score', 'jelly', 'order', 'ingredient', 'mixed'];
+    let objective;
+    if (posInEpisode === 19) {
+      objective = 'mixed';
+    } else if (posInEpisode === 0) {
+      objective = 'score';
+    } else {
+      const typeIdx = (posInEpisode + id) % objTypes.length;
+      objective = objTypes[typeIdx];
+    }
+
+    let baseMoves = Math.round(34 - overallDifficulty * 10 + (rng() * 4 - 2));
+    if (objective === 'ingredient') baseMoves += 4;
+    if (objective === 'mixed') baseMoves += 6;
+    const moves = Math.max(22, Math.min(45, baseMoves));
+
+    let targetScore = 0;
+    let jellyMap = null;
+    let orders = null;
+    let ingredientCount = 0;
+    let ingredientTypes = [CH];
+
+    const adjectives = ['Sparkling', 'Charming', 'Twirling', 'Golden', 'Whimsical', 'Vibrant', 'Cosmic', 'Pastel', 'Inky', 'Velvet'];
+    const nouns = ['Cascade', 'Doodle', 'Scribble', 'Symphony', 'Sketch', 'Palette', 'Glow', 'Adventure', 'Canvas', 'Harmony'];
+    const title = `${adjectives[Math.floor(rng() * adjectives.length)]} ${nouns[Math.floor(rng() * nouns.length)]}`;
+    let subtitle = '';
+
+    if (objective === 'score') {
+      const basePts = 2000 + Math.floor(overallDifficulty * 3800) + Math.floor(rng() * 600);
+      targetScore = Math.round(basePts / 100) * 100;
+      subtitle = `Reach ${targetScore.toLocaleString()} points in ${moves} moves!`;
+    } else if (objective === 'jelly') {
+      const density = 0.32 + overallDifficulty * 0.40;
+      const doubleRate = 0.15 + overallDifficulty * 0.50;
+      jellyMap = generateJellyMap(rng, density, doubleRate);
+      subtitle = `Clear all sketch ink patches across the board!`;
+    } else if (objective === 'order') {
+      const numColors = rng() < 0.5 ? 2 : 3;
+      orders = {};
+      const colors = [1, 2, 3, 4, 5, 6].sort(() => rng() - 0.5).slice(0, numColors);
+      const perColor = Math.round(12 + overallDifficulty * 12 + rng() * 4);
+      colors.forEach(c => { orders[c] = perColor; });
+      subtitle = `Collect your target order before running out of moves!`;
+    } else if (objective === 'ingredient') {
+      ingredientCount = 3 + Math.floor(overallDifficulty * 3);
+      if (overallDifficulty > 0.4) ingredientTypes = [CH, HZ];
+      subtitle = `Guide ${ingredientCount} acorns and ink drops to the bottom!`;
+      targetScore = 1800 + Math.floor(overallDifficulty * 1800);
+    } else if (objective === 'mixed') {
+      const basePts = 2600 + Math.floor(overallDifficulty * 3200);
+      targetScore = Math.round(basePts / 100) * 100;
+      const density = 0.25 + overallDifficulty * 0.35;
+      jellyMap = generateJellyMap(rng, density, 0.3);
+      if (rng() < 0.6) {
+        orders = {};
+        orders[Math.floor(rng() * 5) + 1] = Math.round(10 + overallDifficulty * 8);
+      }
+      subtitle = `Score ${targetScore.toLocaleString()} points and clear the ink!`;
+    }
+
+    const baseStarScore = targetScore > 0 ? targetScore : Math.round((1800 + overallDifficulty * 2200) / 100) * 100;
+    const star1 = baseStarScore;
+    const star2 = Math.round((baseStarScore * 1.45) / 50) * 50;
+    const star3 = Math.round((baseStarScore * 2.05) / 50) * 50;
+
+    list.push({
+      id,
+      title,
+      subtitle,
+      worldName,
+      worldIndex: worldIndex + 1,
+      objective,
+      moves,
+      candyPool,
+      targetScore,
+      stars: [star1, star2, star3],
+      jellyMap,
+      orders,
+      ingredientCount,
+      ingredientTypes
+    });
+  }
+
+  return list;
+}
+
+const Levels = generateLevels(500);
+
+Object.freeze(Levels);

@@ -1,0 +1,33 @@
+{
+  "name": "Match-a-Doodle — Sketch Match 3",
+  "short_name": "Match-a-Doodle",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "description": "Apple-grade sketchbook match-3 puzzle game with hand-drawn physics and doodle powerups.",
+  "background_color": "#f6f3eb",
+  "theme_color": "#f6f3eb",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["games", "puzzle"]
+}
