@@ -700,6 +700,7 @@ const Game = (() => {
 
   function handleSwap(r1, c1, r2, c2) {
     if (state !== STATE.PLAYING) return;
+    if (movesLeft <= 0) return;
     const isFreeSwapBooster = Boosters.checkFreeSwap(r1, c1, r2, c2);
     if (!Board.isAdjacent(r1, c1, r2, c2)) return;
 
@@ -752,7 +753,7 @@ const Game = (() => {
     }
 
     state = STATE.ANIMATING;
-    movesLeft--;
+    movesLeft = Math.max(0, movesLeft - 1);
     cascadeLevel = 0;
     updateHUD();
 
@@ -1289,7 +1290,7 @@ const Game = (() => {
   // ── HUD & Star Meter ─────────────────────────────────────────────────────────
 
   function updateHUD() {
-    setText('hud-moves', movesLeft);
+    setText('hud-moves', Math.max(0, movesLeft));
     setText('hud-score', score.toLocaleString());
     if (levelDef) setText('hud-level', `Level ${levelDef.id}`);
     updateCurrencyUI();
@@ -1394,19 +1395,18 @@ const Game = (() => {
     }
     const retryBtn = document.getElementById('btn-victory-retry');
     if (retryBtn) {
-      retryBtn.onclick = (e) => {
-        if (e) e.stopPropagation();
-        try { AudioEngine.playClick(); } catch (_) {}
-        startLevel(currentLevelIndex);
-      };
-    }
-    const mapBtn = document.getElementById('btn-quit-to-map');
-    if (mapBtn) {
-      mapBtn.onclick = (e) => {
-        if (e) e.stopPropagation();
-        try { AudioEngine.playClick(); } catch (_) {}
-        showMap();
-      };
+      if (stars >= 3) {
+        // Requirement: When earning 3 stars, do NOT show "Retry for 3 Stars"!
+        retryBtn.style.display = 'none';
+      } else {
+        retryBtn.style.display = 'inline-flex';
+        retryBtn.textContent = '🔄 Retry for 3 Stars ⭐';
+        retryBtn.onclick = (e) => {
+          if (e) e.stopPropagation();
+          try { AudioEngine.playClick(); } catch (_) {}
+          startLevel(currentLevelIndex);
+        };
+      }
     }
     const homeBtn = document.getElementById('btn-victory-home');
     if (homeBtn) {
@@ -1491,6 +1491,7 @@ const Game = (() => {
     startLevel,
     showMap,
     showMainMenu,
+    showVictoryScreen,
     getCoins,
     addCoins,
     spendCoins,
