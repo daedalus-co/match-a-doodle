@@ -63,7 +63,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          gh release delete v1.0.0 --yes || true
           gh release create v1.0.0 match-a-doodle.apk \
             --title "Match-a-Doodle v1.0.0 (Android APK)" \
-            --notes "Direct installable APK for Android devices. Download and tap to install directly on your phone." \
-            --clobber || gh release upload v1.0.0 match-a-doodle.apk --clobber
+            --notes "Direct installable APK for Android devices. Download and tap to install directly on your phone."
