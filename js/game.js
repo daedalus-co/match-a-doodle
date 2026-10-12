@@ -1076,7 +1076,13 @@ const Game = (() => {
       } else {
         cascadeLevel = 0;
         if (isConcludingLevel) {
-          handleVictory();
+          if (hasSpecialsOnBoard()) {
+            cascadeTimeout = setTimeout(() => {
+              detonateAllSpecials();
+            }, 240);
+          } else {
+            checkLevelEndConclusion();
+          }
           return;
         }
 
@@ -1137,6 +1143,53 @@ const Game = (() => {
     updateStarMeter();
   }
 
+  function hasSpecialsOnBoard() {
+    for (let r = 0; r < Config.ROWS; r++) {
+      for (let c = 0; c < Config.COLS; c++) {
+        if (grid[r]?.[c] && grid[r][c].special !== Config.SPECIAL.NONE) return true;
+      }
+    }
+    return false;
+  }
+
+  function checkLevelEndConclusion() {
+    if (state === STATE.VICTORY || state === STATE.DEFEAT) return;
+    const obj = levelDef.objective;
+    const [s1, , s3] = levelDef.stars;
+
+    let goalMet = false;
+    if (obj === 'score') {
+      goalMet = score >= s1;
+    } else if (obj === 'jelly') {
+      goalMet = jelliesLeft === 0;
+    } else if (obj === 'order') {
+      goalMet = Object.values(ordersLeft).every(v => v <= 0);
+    } else if (obj === 'ingredient') {
+      goalMet = ingredientsLeft <= 0;
+    } else if (obj === 'mixed') {
+      const jellyOk = !levelDef.jellyMap || jelliesLeft === 0;
+      const orderOk = !levelDef.orders || Object.values(ordersLeft).every(v => v <= 0);
+      const ingOk   = !levelDef.ingredientCount || ingredientsLeft <= 0;
+      goalMet = jellyOk && orderOk && ingOk;
+    }
+
+    if (score >= s3 || goalMet) {
+      handleVictory();
+    } else {
+      handleDefeat();
+    }
+  }
+
+  function startSpecialDetonationWave() {
+    if (state === STATE.VICTORY || state === STATE.DEFEAT) return;
+    isConcludingLevel = true;
+    state = STATE.ANIMATING;
+    clearHintTimer();
+    Renderer.clearHint();
+    Renderer.spawnFloatText(Math.floor(Config.ROWS / 2), Math.floor(Config.COLS / 2), 'POWERUP BURST! 💥✨', '#ff5e7e', 30);
+    detonateAllSpecials();
+  }
+
   // ── Win / Lose Detection & Dopamine Climax ───────────────────────────────────
 
   function checkWinLose() {
@@ -1168,6 +1221,8 @@ const Game = (() => {
     if (score >= s3) {
       if (movesLeft > 0) {
         triggerDoodleFrenzy();
+      } else if (hasSpecialsOnBoard()) {
+        startSpecialDetonationWave();
       } else {
         handleVictory();
       }
@@ -1179,7 +1234,9 @@ const Game = (() => {
     if (obj === 'score') {
       // In score levels, player continues playing their moves to aim for 2 and 3 stars!
       if (movesLeft <= 0) {
-        if (score >= s1) {
+        if (hasSpecialsOnBoard()) {
+          startSpecialDetonationWave();
+        } else if (score >= s1) {
           handleVictory();
         } else {
           handleDefeat();
@@ -1202,11 +1259,17 @@ const Game = (() => {
     if (goalMet) {
       if (movesLeft > 0) {
         triggerDoodleFrenzy();
+      } else if (hasSpecialsOnBoard()) {
+        startSpecialDetonationWave();
       } else {
         handleVictory();
       }
     } else if (movesLeft <= 0) {
-      handleDefeat();
+      if (hasSpecialsOnBoard()) {
+        startSpecialDetonationWave();
+      } else {
+        handleDefeat();
+      }
     }
   }
 
@@ -1284,7 +1347,13 @@ const Game = (() => {
       score += bonusMoves * 1500;
       updateHUD();
       updateStarMeter();
-      handleVictory();
+      if (hasSpecialsOnBoard()) {
+        frenzyTimeout = setTimeout(() => {
+          detonateAllSpecials();
+        }, 260);
+      } else {
+        checkLevelEndConclusion();
+      }
     }
   }
 
@@ -1316,7 +1385,7 @@ const Game = (() => {
     if (activated > 0) {
       triggerCascade();
     } else {
-      handleVictory();
+      checkLevelEndConclusion();
     }
   }
 

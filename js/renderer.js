@@ -1,6 +1,6 @@
 /**
  * Doodle Premium — Canvas Renderer
- * Hand-drawn aesthetic inspired by Apple craftsmanship:
+ * Handcrafted sketchbook aesthetic:
  * - Warm notebook paper / sketchbook background with fine dot grid
  * - Sketched vector doodle sweets with ink outlines and watercolor fills
  * - Distinct pulsating glow for all special powerup tiles (Striped, Wrapped, Color Bomb)
