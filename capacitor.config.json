@@ -3,6 +3,7 @@
   "appName": "Match-a-Doodle",
   "webDir": "www",
   "server": {
-    "androidScheme": "https"
+    "url": "https://daedalus-co.github.io/match-a-doodle/",
+    "cleartext": true
   }
 }

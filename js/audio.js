@@ -59,52 +59,58 @@ const AudioEngine = (() => {
                       attack = 0.01, decay = 0.05, sustain = 0.2, release = 0.15,
                       dur = 0.3, detune = 0, dest = null } = {}) {
     if (!sfxEnabled) return;
-    const c = getCtx();
-    const now = c.currentTime + start;
+    try {
+      const c = getCtx();
+      if (!c) return;
+      const now = c.currentTime + start;
 
-    const osc = c.createOscillator();
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, now);
-    osc.detune.setValueAtTime(detune, now);
+      const osc = c.createOscillator();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, now);
+      osc.detune.setValueAtTime(detune, now);
 
-    const g = c.createGain();
-    g.gain.setValueAtTime(0, now);
-    g.gain.linearRampToValueAtTime(gainPeak, now + attack);
-    g.gain.linearRampToValueAtTime(gainPeak * sustain, now + attack + decay);
-    g.gain.setValueAtTime(gainPeak * sustain, now + dur - release);
-    g.gain.linearRampToValueAtTime(0, now + dur);
+      const g = c.createGain();
+      g.gain.setValueAtTime(0, now);
+      g.gain.linearRampToValueAtTime(gainPeak, now + attack);
+      g.gain.linearRampToValueAtTime(gainPeak * sustain, now + attack + decay);
+      g.gain.setValueAtTime(gainPeak * sustain, now + dur - release);
+      g.gain.linearRampToValueAtTime(0, now + dur);
 
-    osc.connect(g);
-    g.connect(dest || sfxGain);
-    osc.start(now);
-    osc.stop(now + dur + 0.01);
+      osc.connect(g);
+      g.connect(dest || sfxGain);
+      osc.start(now);
+      osc.stop(now + dur + 0.01);
+    } catch (_) {}
   }
 
   function playNoise({ gainPeak = 0.3, start = 0, dur = 0.18, lowpass = 1800 } = {}) {
     if (!sfxEnabled) return;
-    const c = getCtx();
-    const now = c.currentTime + start;
-    const bufSize = Math.ceil(c.sampleRate * (dur + 0.05));
-    const buf = c.createBuffer(1, bufSize, c.sampleRate);
-    const data = buf.getChannelData(0);
-    for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+    try {
+      const c = getCtx();
+      if (!c) return;
+      const now = c.currentTime + start;
+      const bufSize = Math.ceil(c.sampleRate * (dur + 0.05));
+      const buf = c.createBuffer(1, bufSize, c.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
 
-    const src = c.createBufferSource();
-    src.buffer = buf;
+      const src = c.createBufferSource();
+      src.buffer = buf;
 
-    const filt = c.createBiquadFilter();
-    filt.type = 'lowpass';
-    filt.frequency.value = lowpass;
+      const filt = c.createBiquadFilter();
+      filt.type = 'lowpass';
+      filt.frequency.value = lowpass;
 
-    const g = c.createGain();
-    g.gain.setValueAtTime(gainPeak, now);
-    g.gain.linearRampToValueAtTime(0, now + dur);
+      const g = c.createGain();
+      g.gain.setValueAtTime(gainPeak, now);
+      g.gain.linearRampToValueAtTime(0, now + dur);
 
-    src.connect(filt);
-    filt.connect(g);
-    g.connect(sfxGain);
-    src.start(now);
-    src.stop(now + dur + 0.01);
+      src.connect(filt);
+      filt.connect(g);
+      g.connect(sfxGain);
+      src.start(now);
+      src.stop(now + dur + 0.01);
+    } catch (_) {}
   }
 
   // ── Public Sound Effects ─────────────────────────────────────────────────────

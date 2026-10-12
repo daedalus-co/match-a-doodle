@@ -44,8 +44,26 @@ const Renderer = (() => {
     window.addEventListener('resize', resize);
   }
 
+  let bgPattern = null;
+
+  function createBgPattern() {
+    try {
+      const pCanvas = document.createElement('canvas');
+      pCanvas.width = 16;
+      pCanvas.height = 16;
+      const pCtx = pCanvas.getContext('2d');
+      pCtx.fillStyle = 'rgba(70, 60, 50, 0.08)';
+      pCtx.beginPath();
+      pCtx.arc(8, 8, 1, 0, Math.PI * 2);
+      pCtx.fill();
+      bgPattern = ctx.createPattern(pCanvas, 'repeat');
+    } catch (_) {
+      bgPattern = null;
+    }
+  }
+
   function resize() {
-    dpr = window.devicePixelRatio || 1;
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
     const containerWidth  = Math.min(window.innerWidth, 460);
     const containerHeight = window.innerHeight - 250;
     const maxTile = Math.min(
@@ -65,6 +83,8 @@ const Renderer = (() => {
 
     boardOffsetX = 0;
     boardOffsetY = 0;
+
+    createBgPattern();
   }
 
   function getTileSize() { return tileSize; }
@@ -102,25 +122,14 @@ const Renderer = (() => {
     ctx.fillStyle = '#faf7f0';
     ctx.fillRect(0, 0, w, h);
 
-    ctx.save();
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.06)';
-    ctx.lineWidth = 1;
-
-    const step = 16;
-    ctx.fillStyle = 'rgba(70, 60, 50, 0.08)';
-    for (let x = 8; x < w; x += step) {
-      for (let y = 8; y < h; y += step) {
-        ctx.beginPath();
-        ctx.arc(x, y, 0.8, 0, Math.PI * 2);
-        ctx.fill();
-      }
+    if (bgPattern) {
+      ctx.fillStyle = bgPattern;
+      ctx.fillRect(0, 0, w, h);
     }
 
     ctx.strokeStyle = 'rgba(40, 30, 20, 0.15)';
     ctx.lineWidth = 2;
     ctx.strokeRect(1, 1, w - 2, h - 2);
-
-    ctx.restore();
   }
 
   // ── Animations ───────────────────────────────────────────────────────────────
@@ -252,9 +261,10 @@ const Renderer = (() => {
       radius *= breath;
 
       ctx.save();
-      ctx.shadowColor = 'rgba(43, 38, 35, 0.4)';
-      ctx.shadowBlur = 10;
-      ctx.shadowOffsetY = 4;
+      ctx.fillStyle = 'rgba(43, 38, 35, 0.22)';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + 4, radius, radius * 0.9, 0, 0, Math.PI * 2);
+      ctx.fill();
     }
 
     // ── DISTINCT POWERUP GLOW ANIMATION ───────────────────────────────────────
@@ -313,10 +323,6 @@ const Renderer = (() => {
     const col = getDoodleColor(colorId);
 
     ctx.save();
-    ctx.shadowColor = 'rgba(40, 30, 20, 0.18)';
-    ctx.shadowBlur = 4;
-    ctx.shadowOffsetY = 2;
-
     ctx.fillStyle = col.fill;
     ctx.strokeStyle = '#2b2623';
     ctx.lineWidth = 2.2;
@@ -525,9 +531,6 @@ const Renderer = (() => {
 
   function drawDoodleColorBomb(cx, cy, r) {
     ctx.save();
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-    ctx.shadowBlur = 8;
-
     ctx.fillStyle = '#26211e';
     ctx.strokeStyle = '#141110';
     ctx.lineWidth = 2.6;
@@ -774,9 +777,10 @@ const Renderer = (() => {
       ctx.globalAlpha = ft.alpha;
       ctx.font = `800 ${ft.size}px Nunito, sans-serif`;
       ctx.textAlign = 'center';
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 3;
+      ctx.strokeText(ft.text, ft.x, ft.y + ft.yOffset);
       ctx.fillStyle = ft.color;
-      ctx.shadowColor = 'rgba(255,255,255,0.95)';
-      ctx.shadowBlur = 4;
       ctx.fillText(ft.text, ft.x, ft.y + ft.yOffset);
       ctx.restore();
 
@@ -868,9 +872,6 @@ const Renderer = (() => {
       const cell2 = grid[activeSwapAnim.r2][activeSwapAnim.c2];
 
       ctx.save();
-      ctx.shadowColor = 'rgba(43, 38, 35, 0.35)';
-      ctx.shadowBlur = 8;
-      ctx.shadowOffsetY = 3;
 
       drawCell(activeSwapAnim.r1, activeSwapAnim.c1, cell1, {x:0,y:0}, { x: curX1, y: curY1 }, true);
       drawCell(activeSwapAnim.r2, activeSwapAnim.c2, cell2, {x:0,y:0}, { x: curX2, y: curY2 }, true);

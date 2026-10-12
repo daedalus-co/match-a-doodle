@@ -71,9 +71,13 @@
     <!-- Sticky Top Navigation Bar (Fixed sound button removed) -->
     <div class="map-top-bar">
       <button class="btn-icon" id="btn-map-back-menu" title="Main Menu">🏠</button>
-      <div class="map-world-indicator" id="map-world-indicator">
-        <span class="world-tag" id="map-world-tag">World 1</span>
-        <span class="world-name-display" id="map-world-name">Sketchy Hills</span>
+      <div class="map-world-indicator" id="map-world-indicator" style="display:flex; align-items:center; gap:6px;">
+        <button class="btn-icon" id="btn-map-prev-world" style="width:32px; height:32px; font-size:1rem; padding:0;" title="Previous World">◀</button>
+        <div style="display:flex; flex-direction:column; align-items:center; min-width:130px;">
+          <span class="world-tag" id="map-world-tag">World 1 / 25</span>
+          <span class="world-name-display" id="map-world-name">Sketchy Hills</span>
+        </div>
+        <button class="btn-icon" id="btn-map-next-world" style="width:32px; height:32px; font-size:1rem; padding:0;" title="Next World">▶</button>
       </div>
       <div class="currency-pill" title="Gold Coins">
         <span class="coin-icon">🪙</span>
@@ -351,17 +355,6 @@
   <script src="js/game.js?v=9"></script>
 
   <script>
-    const _origStart = Game.startLevel.bind(Game);
-    Game.startLevel = function(index) {
-      const lvl = Levels[index];
-      const banner = document.getElementById('level-intro-banner');
-      const titleEl = document.getElementById('intro-title');
-      const subEl   = document.getElementById('intro-subtitle');
-      if (titleEl) titleEl.textContent = `Level ${lvl.id} — ${lvl.title}`;
-      if (subEl)   subEl.textContent   = lvl.subtitle;
-      if (banner)  { banner.classList.add('show'); setTimeout(() => banner.classList.remove('show'), 1100); }
-      _origStart(index);
-    };
 
     // ── Service Worker & PWA Installation ───────────────────────
     if ('serviceWorker' in navigator) {

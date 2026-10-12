@@ -258,6 +258,16 @@ const Game = (() => {
     updateStarMeter();
     updateBoosterUI();
 
+    const banner = document.getElementById('level-intro-banner');
+    const titleEl = document.getElementById('intro-title');
+    const subEl   = document.getElementById('intro-subtitle');
+    if (titleEl) titleEl.textContent = `Level ${levelDef.id} — ${levelDef.title}`;
+    if (subEl)   subEl.textContent   = levelDef.subtitle;
+    if (banner)  {
+      banner.classList.add('show');
+      setTimeout(() => banner.classList.remove('show'), 1100);
+    }
+
     const t = levelDef.stars;
     setText('intro-star-1', t[0].toLocaleString());
     setText('intro-star-2', t[1].toLocaleString());
@@ -495,19 +505,57 @@ const Game = (() => {
     });
 
     // Victory screen actions: Next Level, Retry Level for 3 Stars, Map, Go Home
-    document.getElementById('btn-next-level')?.addEventListener('click', () => { AudioEngine.playClick(); nextLevel(); });
-    document.getElementById('btn-victory-retry')?.addEventListener('click', () => { AudioEngine.playClick(); startLevel(currentLevelIndex); });
-    document.getElementById('btn-quit-to-map')?.addEventListener('click', () => { AudioEngine.playClick(); showMap(); });
-    document.getElementById('btn-victory-home')?.addEventListener('click', () => { AudioEngine.playClick(); showMainMenu(); });
+    document.getElementById('btn-next-level')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      try { AudioEngine.playClick(); } catch (_) {}
+      nextLevel();
+    });
+    document.getElementById('btn-victory-retry')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      try { AudioEngine.playClick(); } catch (_) {}
+      startLevel(currentLevelIndex);
+    });
+    document.getElementById('btn-quit-to-map')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      try { AudioEngine.playClick(); } catch (_) {}
+      showMap();
+    });
+    document.getElementById('btn-victory-home')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      try { AudioEngine.playClick(); } catch (_) {}
+      showMainMenu();
+    });
 
     // Defeat screen actions
-    document.getElementById('btn-retry')?.addEventListener('click', () => { AudioEngine.playClick(); startLevel(currentLevelIndex); });
-    document.getElementById('btn-watch-ad')?.addEventListener('click', () => { AudioEngine.playClick(); watchAdForMoves(); });
-    document.getElementById('btn-defeat-quit')?.addEventListener('click', () => { AudioEngine.playClick(); showMap(); });
+    document.getElementById('btn-retry')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      try { AudioEngine.playClick(); } catch (_) {}
+      startLevel(currentLevelIndex);
+    });
+    document.getElementById('btn-watch-ad')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      try { AudioEngine.playClick(); } catch (_) {}
+      watchAdForMoves();
+    });
+    document.getElementById('btn-defeat-quit')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      try { AudioEngine.playClick(); } catch (_) {}
+      showMap();
+    });
+
+    // World switcher buttons on Adventure Map
+    document.getElementById('btn-map-prev-world')?.addEventListener('click', () => {
+      try { AudioEngine.playClick(); } catch (_) {}
+      if (viewingWorldIndex > 0) renderSerpentineMap(viewingWorldIndex - 1);
+    });
+    document.getElementById('btn-map-next-world')?.addEventListener('click', () => {
+      try { AudioEngine.playClick(); } catch (_) {}
+      if (viewingWorldIndex < 24) renderSerpentineMap(viewingWorldIndex + 1);
+    });
 
     // Settings Modal (Background Music & Sound Effects)
     document.getElementById('btn-map-settings')?.addEventListener('click', () => {
-      AudioEngine.playClick();
+      try { AudioEngine.playClick(); } catch (_) {}
       showScreen('screen-settings');
     });
     document.getElementById('btn-close-settings')?.addEventListener('click', () => {
@@ -964,7 +1012,7 @@ const Game = (() => {
 
   function handleVictory() {
     state = STATE.VICTORY;
-    AudioEngine.playVictory();
+    try { AudioEngine.playVictory(); } catch (_) {}
     const stars = calculateStars();
 
     const cur = getLevelProgress(levelDef.id);
@@ -978,22 +1026,18 @@ const Game = (() => {
     saveProgress();
 
     showVictoryScreen(stars, score, 50);
-
-    // After victory screen is shown, check if player has cleared 2 levels to prompt for nickname!
-    setTimeout(() => {
-      checkUsernamePrompt();
-    }, 1800);
   }
 
   function handleDefeat() {
     state = STATE.DEFEAT;
-    AudioEngine.playDefeat();
+    try { AudioEngine.playDefeat(); } catch (_) {}
     showDefeatScreen();
   }
 
-  // ── Serpentine 500-Level Adventure Map ───────────────────────────────────────
+  // ── Serpentine 500-Level Adventure Map (Chunked by Worlds for 60 FPS & 0 Lag) ───
+  let viewingWorldIndex = -1;
 
-  function renderSerpentineMap() {
+  function renderSerpentineMap(targetWorld = null) {
     const container = document.getElementById('map-path-container');
     if (!container) return;
 
@@ -1002,31 +1046,46 @@ const Game = (() => {
       if (getLevelProgress(lvl.id).unlocked) highestUnlocked = lvl.id;
     });
 
-    const currentWorldIndex = Math.min(24, Math.floor((highestUnlocked - 1) / 20));
-    const currentWorldName = WORLD_NAMES[currentWorldIndex] || 'Sketchy Hills';
-    setText('map-world-tag', `World ${currentWorldIndex + 1} / 25`);
-    setText('map-world-name', currentWorldName);
+    const playerWorldIndex = Math.min(24, Math.floor((highestUnlocked - 1) / 20));
+    if (targetWorld !== null) {
+      viewingWorldIndex = Math.max(0, Math.min(24, targetWorld));
+    } else if (viewingWorldIndex === -1) {
+      viewingWorldIndex = playerWorldIndex;
+    }
 
-    const xOffsets = [-90, -45, 0, 45, 90, 45, 0, -45];
-    let html = '';
-    let lastWorldIdx = -1;
+    const worldName = WORLD_NAMES[viewingWorldIndex] || 'Sketchy Hills';
+    const startLvl = viewingWorldIndex * 20 + 1;
+    const endLvl = Math.min(Levels.length, (viewingWorldIndex + 1) * 20);
 
-    Levels.forEach((lvl, idx) => {
-      const worldIdx = Math.floor(idx / 20);
-      if (worldIdx !== lastWorldIdx) {
-        html += `
-          <div class="map-episode-card">
-            <div class="episode-num">World ${worldIdx + 1}</div>
-            <div class="episode-title">${WORLD_NAMES[worldIdx]}</div>
-          </div>
-        `;
-        lastWorldIdx = worldIdx;
-      }
+    setText('map-world-tag', `World ${viewingWorldIndex + 1} / 25`);
+    setText('map-world-name', `${worldName} (${startLvl}–${endLvl})`);
 
+    const prevBtn = document.getElementById('btn-map-prev-world');
+    const nextBtn = document.getElementById('btn-map-next-world');
+    if (prevBtn) prevBtn.disabled = viewingWorldIndex <= 0;
+    if (nextBtn) nextBtn.disabled = viewingWorldIndex >= 24;
+
+    const xOffsets = [-80, -40, 0, 40, 80, 40, 0, -40];
+    let html = `
+      <div class="map-episode-card" style="margin-bottom:12px;">
+        <div class="episode-num">World ${viewingWorldIndex + 1} of 25</div>
+        <div class="episode-title">${worldName}</div>
+        <div style="font-size:0.75rem; color:var(--clr-subtext); margin-top:2px;">Levels ${startLvl} to ${endLvl}</div>
+        ${viewingWorldIndex !== playerWorldIndex ? `
+          <button id="btn-jump-current-world" style="margin-top:8px; padding:6px 12px; font-size:0.78rem; background:#ecfdf5; border:2px solid #059669; color:#065f46; border-radius:12px; font-weight:800; cursor:pointer;">
+            🎯 Jump to Your Level (${highestUnlocked})
+          </button>
+        ` : ''}
+      </div>
+    `;
+
+    // Render ONLY the 20 levels for the current world — eliminates texture overflow & lag!
+    for (let idx = startLvl - 1; idx < endLvl; idx++) {
+      const lvl = Levels[idx];
       const prog = getLevelProgress(lvl.id);
       const isCurrent = (lvl.id === highestUnlocked);
       const statusClass = isCurrent ? 'current' : (prog.unlocked ? 'unlocked' : 'locked');
-      const offset = xOffsets[idx % xOffsets.length];
+      const offset = xOffsets[(idx - startLvl + 1) % xOffsets.length];
 
       const starsHtml = [1, 2, 3].map(i =>
         `<span class="star ${i <= (prog.stars || 0) ? 'filled' : ''}">★</span>`
@@ -1044,16 +1103,22 @@ const Game = (() => {
           </button>
         </div>
       `;
-    });
+    }
 
     container.innerHTML = html;
+
+    // Jump button listener if rendered
+    document.getElementById('btn-jump-current-world')?.addEventListener('click', () => {
+      try { AudioEngine.playClick(); } catch (_) {}
+      renderSerpentineMap(playerWorldIndex);
+    });
 
     setTimeout(() => {
       const activeNode = document.getElementById(`level-node-${highestUnlocked}`);
       if (activeNode) {
         activeNode.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
-    }, 100);
+    }, 60);
   }
 
   // ── HUD & Star Meter ─────────────────────────────────────────────────────────
