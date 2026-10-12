@@ -1,0 +1,27 @@
+{
+  "name": "sugar-rush",
+  "version": "1.0.0",
+  "description": "",
+  "main": "sw.js",
+  "scripts": {
+    "build": "rm -rf www && mkdir -p www && cp -r css icons js index.html manifest.json sw.js www/",
+    "cap:sync": "npm run build && npx cap sync"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/daedalus-co/match-a-doodle.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/daedalus-co/match-a-doodle/issues"
+  },
+  "homepage": "https://github.com/daedalus-co/match-a-doodle#readme",
+  "devDependencies": {
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/cli": "^8.5.3",
+    "@capacitor/core": "^8.5.3"
+  }
+}

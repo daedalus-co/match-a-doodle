@@ -1,0 +1,8 @@
+{
+  "appId": "co.daedalus.matchadoodle",
+  "appName": "Match-a-Doodle",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}

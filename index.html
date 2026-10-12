@@ -56,6 +56,9 @@
         <button class="btn-primary btn-hero-play" id="btn-menu-play">▶ PLAY CURRENT LEVEL</button>
         <button class="btn-secondary" id="btn-menu-levels">🗺️ CHOOSE LEVEL</button>
         <button class="btn-secondary" id="btn-menu-options">⚙️ OPTIONS</button>
+        <a href="https://github.com/daedalus-co/match-a-doodle/releases/download/v1.0.0/match-a-doodle.apk" download="match-a-doodle.apk" class="btn-secondary" id="btn-download-apk" style="display:flex; align-items:center; justify-content:center; gap:8px; text-decoration:none; background:#ecfdf5; border-color:#059669; color:#065f46; font-weight:900;">
+          🤖 DOWNLOAD ANDROID APK
+        </a>
       </div>
     </div>
   </div>
@@ -305,7 +308,9 @@
         </div>
       </div>
       <div class="modal-actions" style="margin-top: 14px;">
-        <button class="btn-secondary" id="btn-manual-install" style="font-weight:900;">📲 Install App to Home Screen</button>
+        <a href="https://github.com/daedalus-co/match-a-doodle/releases/download/v1.0.0/match-a-doodle.apk" download="match-a-doodle.apk" class="btn-secondary" id="btn-manual-install" style="font-weight:900; display:flex; align-items:center; justify-content:center; gap:8px; text-decoration:none; background:#ecfdf5; border-color:#059669; color:#065f46;">
+          🤖 Download Android APK (.apk)
+        </a>
         <button class="btn-primary" id="btn-close-settings">Done</button>
       </div>
     </div>
@@ -329,23 +334,6 @@
         <button class="btn-primary" id="btn-save-username">Save Name ✨</button>
         <button class="btn-secondary" id="btn-skip-username">Later</button>
       </div>
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════════════════════════════════════
-       INSTALL APP BANNER / TOAST (Prompts installation & OTA updates)
-       ══════════════════════════════════════════════════════════════ -->
-  <div id="pwa-install-banner" style="display:none; position:fixed; bottom:16px; left:50%; transform:translateX(-50%); width:90%; max-width:380px; background:#ffffff; border:3px solid #2b2623; border-radius:20px; box-shadow:3px 6px 0px #2b2623; padding:12px 16px; z-index:9999; align-items:center; justify-content:space-between; gap:10px;">
-    <div style="display:flex; align-items:center; gap:10px;">
-      <span style="font-size:1.8rem;">📲</span>
-      <div>
-        <div style="font-weight:900; font-size:0.95rem;">Install Match-a-Doodle</div>
-        <div style="font-size:0.75rem; color:var(--clr-subtext);">Play fullscreen & get instant updates!</div>
-      </div>
-    </div>
-    <div style="display:flex; gap:6px;">
-      <button id="btn-pwa-install" class="btn-primary" style="padding:6px 12px; font-size:0.85rem; border-radius:12px;">Install</button>
-      <button id="btn-pwa-dismiss" class="btn-secondary" style="padding:6px 8px; font-size:0.85rem; border-radius:12px;">✕</button>
     </div>
   </div>
 
@@ -398,58 +386,11 @@
       });
     }
 
-    // Capture install prompt
-    let deferredPrompt = null;
-    const installBanner = document.getElementById('pwa-install-banner');
-    const installBtn = document.getElementById('btn-pwa-install');
-    const dismissBtn = document.getElementById('btn-pwa-dismiss');
-
+    // Suppress browser install prompt completely as requested
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
-      deferredPrompt = e;
-      if (installBanner && !sessionStorage.getItem('pwa_dismissed')) {
-        installBanner.style.display = 'flex';
-      }
+      return false;
     });
-
-    if (installBtn) {
-      installBtn.addEventListener('click', async () => {
-        if (deferredPrompt) {
-          deferredPrompt.prompt();
-          const { outcome } = await deferredPrompt.userChoice;
-          console.log(`[PWA] Install choice: ${outcome}`);
-          deferredPrompt = null;
-        }
-        if (installBanner) installBanner.style.display = 'none';
-      });
-    }
-
-    const manualInstallBtn = document.getElementById('btn-manual-install');
-    if (manualInstallBtn) {
-      manualInstallBtn.addEventListener('click', async () => {
-        if (deferredPrompt) {
-          deferredPrompt.prompt();
-          const { outcome } = await deferredPrompt.userChoice;
-          console.log(`[PWA] Manual install outcome: ${outcome}`);
-          deferredPrompt = null;
-        } else {
-          // Guide iOS Safari or users whose browser does not support beforeinstallprompt
-          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-          if (isIOS) {
-            alert('📲 To install on iPhone/iPad:\n1. Tap the Share icon (square with arrow) at the bottom.\n2. Scroll down and tap "Add to Home Screen".');
-          } else {
-            alert('📲 To install on Android/Desktop:\n1. Tap browser menu (⋮).\n2. Tap "Install App" or "Add to Home screen".');
-          }
-        }
-      });
-    }
-
-    if (dismissBtn) {
-      dismissBtn.addEventListener('click', () => {
-        sessionStorage.setItem('pwa_dismissed', 'true');
-        if (installBanner) installBanner.style.display = 'none';
-      });
-    }
   </script>
 
 </body>
