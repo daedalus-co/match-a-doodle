@@ -5,7 +5,7 @@
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "description": "Apple-grade sketchbook match-3 puzzle game with hand-drawn physics and doodle powerups.",
+  "description": "Handcrafted sketchbook match-3 puzzle game with hand-drawn physics and doodle powerups.",
   "background_color": "#f6f3eb",
   "theme_color": "#f6f3eb",
   "orientation": "portrait",
