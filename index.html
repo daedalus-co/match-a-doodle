@@ -55,6 +55,7 @@
       <div class="menu-actions">
         <button class="btn-primary btn-hero-play" id="btn-menu-play">▶ PLAY CURRENT LEVEL</button>
         <button class="btn-secondary" id="btn-menu-levels">🗺️ CHOOSE LEVEL</button>
+        <button class="btn-gold" id="btn-menu-shop" style="font-weight:900;">🛒 DOODLER SHOP</button>
         <button class="btn-secondary" id="btn-menu-options">⚙️ OPTIONS</button>
         <a href="https://github.com/daedalus-co/match-a-doodle/releases/download/v1.0.0/match-a-doodle.apk" download="match-a-doodle.apk" class="btn-secondary" id="btn-download-apk" style="display:flex; align-items:center; justify-content:center; gap:8px; text-decoration:none; background:#ecfdf5; border-color:#059669; color:#065f46; font-weight:900;">
           🤖 DOWNLOAD ANDROID APK
@@ -79,9 +80,10 @@
         </div>
         <button class="btn-icon" id="btn-map-next-world" style="width:32px; height:32px; font-size:1rem; padding:0;" title="Next World">▶</button>
       </div>
-      <div class="currency-pill" title="Gold Coins">
+      <div class="currency-pill" id="btn-map-shop" style="cursor:pointer;" title="Doodler Shop">
         <span class="coin-icon">🪙</span>
         <span class="coin-val" id="map-coins">100</span>
+        <span style="font-size:0.75rem;margin-left:2px;color:#d97706;">➕</span>
       </div>
       <button class="btn-icon" id="btn-map-settings" title="Game Settings">⚙️</button>
     </div>
@@ -322,6 +324,9 @@
         </div>
       </div>
       <div class="modal-actions" style="margin-top: 14px;">
+        <a href="privacy.html" target="_blank" style="font-size:0.8rem; color:var(--clr-subtext); text-decoration:underline; font-weight:700;">
+          📜 Privacy Policy
+        </a>
         <a href="https://github.com/daedalus-co/match-a-doodle/releases/download/v1.0.0/match-a-doodle.apk" download="match-a-doodle.apk" class="btn-secondary" id="btn-manual-install" style="font-weight:900; display:flex; align-items:center; justify-content:center; gap:8px; text-decoration:none; background:#ecfdf5; border-color:#059669; color:#065f46;">
           🤖 Download Android APK (.apk)
         </a>
@@ -347,6 +352,113 @@
       <div class="modal-actions">
         <button class="btn-primary" id="btn-save-username">Save Name ✨</button>
         <button class="btn-secondary" id="btn-skip-username">Later</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       DOODLER SHOP MODAL (Coins, Booster Packs, Ad Rewards)
+       ══════════════════════════════════════════════════════════════ -->
+  <div id="screen-shop" class="screen modal-screen">
+    <div class="modal-card shop-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <h2 style="margin:0;">🛒 Doodler Shop</h2>
+        <div class="currency-pill">
+          <span class="coin-icon">🪙</span>
+          <span class="coin-val" id="shop-coins-val">100</span>
+        </div>
+      </div>
+      <p style="color:var(--clr-subtext); font-size:0.8rem; margin-bottom:10px;">
+        Stock up on power-up boosters or earn free daily coins!
+      </p>
+
+      <div class="shop-grid">
+        <div class="shop-section-title">🎁 Free Rewards</div>
+
+        <div class="shop-item-card">
+          <div class="shop-item-left">
+            <span class="shop-item-icon">📺</span>
+            <div class="shop-item-info">
+              <h4>Watch Sponsored Ad</h4>
+              <p>+30 Free Gold Coins instantly</p>
+            </div>
+          </div>
+          <button class="btn-shop-buy" id="btn-shop-ad-coins">Watch Ad</button>
+        </div>
+
+        <div class="shop-section-title">⚡ Power-Up Boosters</div>
+
+        <div class="shop-item-card">
+          <div class="shop-item-left">
+            <span class="shop-item-icon">✏️</span>
+            <div class="shop-item-info">
+              <h4>Pencil Eraser (x3)</h4>
+              <p>Erase any stubborn obstacle or candy</p>
+            </div>
+          </div>
+          <button class="btn-shop-buy" id="btn-buy-booster-hammer">🪙 40 Coins</button>
+        </div>
+
+        <div class="shop-item-card">
+          <div class="shop-item-left">
+            <span class="shop-item-icon">🎨</span>
+            <div class="shop-item-info">
+              <h4>Rainbow Color Bomb (x2)</h4>
+              <p>Turn any tile into an ink supernova</p>
+            </div>
+          </div>
+          <button class="btn-shop-buy" id="btn-buy-booster-bomb">🪙 50 Coins</button>
+        </div>
+
+        <div class="shop-item-card">
+          <div class="shop-item-left">
+            <span class="shop-item-icon">🖌️</span>
+            <div class="shop-item-info">
+              <h4>Brush Blast (x2)</h4>
+              <p>Sweep a whole row or column</p>
+            </div>
+          </div>
+          <button class="btn-shop-buy" id="btn-buy-booster-brush">🪙 35 Coins</button>
+        </div>
+
+        <div class="shop-item-card">
+          <div class="shop-item-left">
+            <span class="shop-item-icon">🔀</span>
+            <div class="shop-item-info">
+              <h4>Free Swap (x3)</h4>
+              <p>Swap any two adjacent candies freely</p>
+            </div>
+          </div>
+          <button class="btn-shop-buy" id="btn-buy-booster-swap">🪙 30 Coins</button>
+        </div>
+
+        <div class="shop-section-title">💎 Play Store Coin Bundles</div>
+
+        <div class="shop-item-card">
+          <div class="shop-item-left">
+            <span class="shop-item-icon">🪙</span>
+            <div class="shop-item-info">
+              <h4>Pouch of Coins (+250)</h4>
+              <p>Starter booster pack</p>
+            </div>
+          </div>
+          <button class="btn-shop-buy" id="btn-iap-coins-starter" style="background:#fef3c7; border-color:#d97706; color:#92400e;">$0.99</button>
+        </div>
+
+        <div class="shop-item-card">
+          <div class="shop-item-left">
+            <span class="shop-item-icon">💰</span>
+            <div class="shop-item-info">
+              <h4>Chest of Coins (+1,000)</h4>
+              <p>Most popular value bundle</p>
+            </div>
+          </div>
+          <button class="btn-shop-buy" id="btn-iap-coins-chest" style="background:#fef3c7; border-color:#d97706; color:#92400e;">$2.99</button>
+        </div>
+      </div>
+
+      <div class="modal-actions" style="margin-top:12px;">
+        <button class="btn-primary" id="btn-close-shop">Close Shop</button>
       </div>
     </div>
   </div>

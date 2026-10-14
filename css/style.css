@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════
    Doodle Premium — Mobile-First Stylesheet
-   Apple-grade design language: warm notebook paper textures,
+   Handcrafted sketchbook design language: warm notebook paper textures,
    hand-drawn squiggly borders, rich graphite ink strokes,
    vibrant watercolor accents, and serpentine level trail.
    ═══════════════════════════════════════════════════════════════════ */
@@ -773,3 +773,75 @@ button:disabled { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
 }
 .ad-countdown { font-size: 0.85rem; font-weight: 800; color: #2b2623; }
 .ad-actions { margin-top: 14px; }
+
+/* ── In-Game Doodler Shop Modal ────────────────────────────────────── */
+.shop-card {
+  max-width: 420px;
+  max-height: 85vh;
+  overflow-y: auto;
+  text-align: left;
+}
+.shop-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 14px 0;
+}
+.shop-section-title {
+  font-size: 0.85rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: var(--clr-subtext);
+  letter-spacing: 1px;
+  margin-top: 8px;
+}
+.shop-item-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fdfcf9;
+  border: 2px solid #2b2623;
+  border-radius: 14px;
+  padding: 10px 14px;
+  box-shadow: 2px 3px 0px #2b2623;
+  transition: transform 0.1s ease;
+}
+.shop-item-card:active {
+  transform: translate(1px, 2px);
+  box-shadow: 1px 1px 0px #2b2623;
+}
+.shop-item-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.shop-item-icon {
+  font-size: 1.8rem;
+}
+.shop-item-info h4 {
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: #2b2623;
+  margin-bottom: 2px;
+}
+.shop-item-info p {
+  font-size: 0.76rem;
+  color: var(--clr-subtext);
+}
+.btn-shop-buy {
+  background: #ecfdf5;
+  border: 2px solid #059669;
+  color: #065f46;
+  font-weight: 900;
+  font-size: 0.82rem;
+  border-radius: 10px;
+  padding: 7px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 1px 2px 0px #059669;
+}
+.btn-shop-buy:active {
+  transform: translate(1px, 1px);
+  box-shadow: none;
+}
+

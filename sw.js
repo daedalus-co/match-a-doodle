@@ -5,10 +5,11 @@
  * whenever files change on the server, players receive the update automatically.
  */
 
-const CACHE_NAME = 'match-a-doodle-v8';
+const CACHE_NAME = 'match-a-doodle-v9';
 const PRECACHE_URLS = [
   './',
   './index.html',
+  './privacy.html',
   './manifest.json',
   './css/style.css',
   './js/config.js',

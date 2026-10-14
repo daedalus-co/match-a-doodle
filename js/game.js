@@ -348,6 +348,7 @@ const Game = (() => {
     setText('menu-coins', coins);
     setText('map-coins', coins);
     setText('hud-coins', coins);
+    setText('shop-coins-val', coins);
   }
 
   // ── Level Start ──────────────────────────────────────────────────────────────
@@ -538,6 +539,106 @@ const Game = (() => {
     };
     document.getElementById('btn-download-apk')?.addEventListener('click', markDownloaded);
     document.getElementById('btn-manual-install')?.addEventListener('click', markDownloaded);
+
+    // ── Doodler Shop Modal Wiring ──────────────────────────────────────────────
+    const openShop = () => {
+      AudioEngine.playClick();
+      updateCurrencyUI();
+      showScreen('screen-shop');
+    };
+    document.getElementById('btn-menu-shop')?.addEventListener('click', openShop);
+    document.getElementById('btn-map-shop')?.addEventListener('click', openShop);
+
+    document.getElementById('btn-close-shop')?.addEventListener('click', () => {
+      AudioEngine.playClick();
+      if (state === STATE.MAP) showScreen('screen-map');
+      else showMainMenu();
+    });
+
+    // Shop Booster Purchases:
+    // Hammer (Pencil Eraser x3 for 40 coins)
+    document.getElementById('btn-buy-booster-hammer')?.addEventListener('click', () => {
+      if (spendCoins(40)) {
+        Boosters.grant(Config.BOOSTER.HAMMER, 3);
+        updateBoosterUI();
+        AudioEngine.playBooster();
+        alert('✏️ Purchased 3x Pencil Erasers!');
+      } else {
+        alert('Not enough coins! Watch an ad or clear levels to earn more.');
+      }
+    });
+
+    // Rainbow Color Bomb (x2 for 50 coins)
+    document.getElementById('btn-buy-booster-bomb')?.addEventListener('click', () => {
+      if (spendCoins(50)) {
+        Boosters.grant(Config.BOOSTER.COLOR_BOMB, 2);
+        updateBoosterUI();
+        AudioEngine.playBooster();
+        alert('🎨 Purchased 2x Rainbow Color Bombs!');
+      } else {
+        alert('Not enough coins! Watch an ad or clear levels to earn more.');
+      }
+    });
+
+    // Brush Blast (x2 for 35 coins)
+    document.getElementById('btn-buy-booster-brush')?.addEventListener('click', () => {
+      if (spendCoins(35)) {
+        Boosters.grant(Config.BOOSTER.ROW_BLAST, 2);
+        updateBoosterUI();
+        AudioEngine.playBooster();
+        alert('🖌️ Purchased 2x Brush Blasts!');
+      } else {
+        alert('Not enough coins! Watch an ad or clear levels to earn more.');
+      }
+    });
+
+    // Free Swap (x3 for 30 coins)
+    document.getElementById('btn-buy-booster-swap')?.addEventListener('click', () => {
+      if (spendCoins(30)) {
+        Boosters.grant(Config.BOOSTER.FREE_SWAP, 3);
+        updateBoosterUI();
+        AudioEngine.playBooster();
+        alert('🔀 Purchased 3x Free Swaps!');
+      } else {
+        alert('Not enough coins! Watch an ad or clear levels to earn more.');
+      }
+    });
+
+    // Watch Ad for Free Coins (+30 coins)
+    document.getElementById('btn-shop-ad-coins')?.addEventListener('click', () => {
+      AdManager.showRewardedAd(
+        () => {
+          addCoins(30);
+          updateCurrencyUI();
+          AudioEngine.playCascade(3);
+          alert('🎁 Earned +30 Free Gold Coins!');
+        },
+        () => {
+          // cancelled
+        }
+      );
+    });
+
+    // In-App Purchase Starter Pack ($0.99 for +250 Coins)
+    document.getElementById('btn-iap-coins-starter')?.addEventListener('click', () => {
+      AudioEngine.playClick();
+      // Google Play Billing / Web Prototype simulator
+      if (confirm('Simulate Google Play Store Purchase:\nPouch of 250 Gold Coins ($0.99)?')) {
+        addCoins(250);
+        AudioEngine.playVictory();
+        alert('💎 Thank you! +250 Gold Coins added to your account.');
+      }
+    });
+
+    // In-App Purchase Chest of Coins ($2.99 for +1,000 Coins)
+    document.getElementById('btn-iap-coins-chest')?.addEventListener('click', () => {
+      AudioEngine.playClick();
+      if (confirm('Simulate Google Play Store Purchase:\nChest of 1,000 Gold Coins ($2.99)?')) {
+        addCoins(1000);
+        AudioEngine.playVictory();
+        alert('💎 Thank you! +1,000 Gold Coins added to your account.');
+      }
+    });
 
     // Coins Continue (10 Coins per Resume)
     document.getElementById('btn-buy-moves-coins')?.addEventListener('click', () => {
